@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StrategiumID</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar container">
+    <nav class="top-nav">
+      <a href="#">Главная</a>
+      <a href="#" id="open-feed-modal-top">Лента</a>
+      <a href="#" id="open-tools-modal">Инструменты</a>
+      <a href="#">Поддержка</a>
+    </nav>
+    <div class="top-right">
+      <div class="sections-menu">
+        <button id="sections-toggle" class="sections-btn">Разделы</button>
+        <div id="sections-list" class="sections-list hidden">
+          <a href="#" id="open-feed-modal">Лента</a>
+          <a href="#">Сообщения</a>
+          <a href="#">Гайды</a>
+          <a href="#">Кланы</a>
+          <a href="#">Турниры</a>
+        </div>
+      </div>
+      <button id="steam-login" class="auth-btn steam-btn">
+        <span class="steam-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="img">
+            <path d="M17.6 6.2a4.2 4.2 0 0 0-4.2 4.2v.2l-2.9 4.1a3 3 0 1 0 1.6 2.7v-.1l4.2-3a4.2 4.2 0 1 0 1.3-8.1Zm-8.2 13.3a1.7 1.7 0 1 1 0-3.4 1.7 1.7 0 0 1 0 3.4Zm8.2-6.5a2.6 2.6 0 1 1 0-5.2 2.6 2.6 0 0 1 0 5.2Z"></path>
+          </svg>
+        </span>
+        <span>Войти через Steam</span>
+      </button>
+      <span id="steam-user" class="steam-user">Гость</span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <div class="lang">RU</div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-logo">StrategiumID</div>
+      <div class="hero-title">
+        <p>Добро пожаловать, Командир</p>
+        <h1 id="hero-nickname">Гость</h1>
+      </div>
+      <div class="hero-search">
+        <input id="global-search" type="text" placeholder="Введите название поста/игры..." />
+      </div>
+    </section>
+
+    <section class="news-block container">
+      <div class="news-head">
+        <h2>Новости сообщества</h2>
+        <small>Paradox Games Feed</small>
+      </div>
+      <div id="news-feed" class="news-feed"></div>
+    </section>
+  </main>
+
+  <template id="news-row-template">
+    <article class="news-row">
+      <div class="news-meta">
+        <span class="news-date"></span>
+      </div>
+      <div class="news-title-wrap">
+        <h3 class="news-title"></h3>
+        <p class="news-text"></p>
+      </div>
+      <div class="news-controls">
+        <span class="news-expand-icon" aria-hidden="true">▾</span>
+        <div class="news-tag"></div>
+      </div>
+    </article>
+  </template>
+
+  <div id="feed-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="feed-modal-title">
+    <div class="modal-backdrop" id="feed-modal-close-bg"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <h2 id="feed-modal-title">Лента Strategium VK</h2>
+        <button id="feed-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Источник: <a href="https://vk.com/strategium" target="_blank" rel="noopener noreferrer">vk.com/strategium</a></div>
+      <div id="vk-feed-list" class="vk-feed-list"></div>
+    </section>
+  </div>
+
+  <div id="tools-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tools-modal-title">
+    <div class="modal-backdrop" id="tools-modal-close-bg"></div>
+    <section class="modal-content division-modal">
+      <header class="modal-header">
+        <h2 id="tools-modal-title">Конструктор дивизий HOI4</h2>
+        <button id="tools-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Сетка как в игре: 5 колонок по 5 батальонов + 5 рот поддержки.</div>
+
+      <div class="division-layout game-like">
+        <section>
+          <h3>Шаблон дивизии</h3>
+          <div id="division-grid" class="division-grid"></div>
+          <h3>Роты поддержки</h3>
+          <div id="support-grid" class="support-grid"></div>
+          <div class="template-actions">
+            <button id="clear-division" class="sections-btn">Очистить шаблон</button>
+          </div>
+        </section>
+        <section>
+          <h3>Выбор батальона</h3>
+          <div id="battalion-palette" class="palette-grid"></div>
+          <h3>Выбор роты поддержки</h3>
+          <div id="support-palette" class="palette-grid"></div>
+          <div id="division-stats" class="division-stats"></div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
