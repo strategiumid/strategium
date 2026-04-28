@@ -5,7 +5,7 @@ StrategiumID разделён на независимый Java backend и отд
 - `src/main/java` и `src/main/resources` содержат Spring Boot 3 REST API.
 - `frontend/` содержит текущий статический интерфейс. В будущем его можно заменить на Vite, React, Vue или другой стек без переноса backend-кода.
 
-## Требования
+## Технологии
 
 - Java 17+
 - Maven 3.9+
