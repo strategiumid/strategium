@@ -17,3 +17,5 @@ python -m http.server 5173
   window.STRATEGIUM_API_BASE_URL = "https://api.example.com";
 </script>
 ```
+
+На Amvera frontend будет отдаваться Spring Boot приложением из того же контейнера, поэтому API вызывается с текущего домена автоматически.
