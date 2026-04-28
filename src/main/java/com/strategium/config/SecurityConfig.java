@@ -30,6 +30,7 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/news", "/api/news/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/me").permitAll()
             .requestMatchers("/api/feed/**", "/api/auth/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/steam/games").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/division-templates/units").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/division-templates/calculate").permitAll()
             .requestMatchers("/api/**").authenticated()

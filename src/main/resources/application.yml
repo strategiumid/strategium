@@ -38,6 +38,9 @@ strategium:
     count: ${VK_POST_COUNT:8}
     source-name: ${VK_SOURCE_NAME:Strategium}
     source-avatar-url: ${VK_SOURCE_AVATAR_URL:}
+  steam:
+    web-api-key: ${STEAM_WEB_API_KEY:}
+    language: ${STEAM_LANGUAGE:russian}
 
 ---
 spring:

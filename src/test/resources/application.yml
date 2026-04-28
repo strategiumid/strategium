@@ -19,3 +19,6 @@ strategium:
     sources:
   vk:
     access-token:
+  steam:
+    web-api-key:
+    language: russian

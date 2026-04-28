@@ -84,6 +84,23 @@ class StrategiumApiTests {
   }
 
   @Test
+  void steamGameCatalogIsPublic() throws Exception {
+    mockMvc.perform(get("/api/steam/games"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].slug").value("hearts-of-iron-iv"))
+        .andExpect(jsonPath("$[1].slug").value("crusader-kings-iii"));
+  }
+
+  @Test
+  void steamAchievementsRequireLinkedSteamAccount() throws Exception {
+    HttpSession session = login("Tester");
+
+    mockMvc.perform(get("/api/steam/achievements")
+            .session((org.springframework.mock.web.MockHttpSession) session))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void authenticatedUserCanUpdateProfile() throws Exception {
     HttpSession session = login("Old Name");
 
