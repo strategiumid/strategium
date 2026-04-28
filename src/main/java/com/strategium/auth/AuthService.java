@@ -18,9 +18,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthService {
 
   private final UserAccountRepository userAccountRepository;
+  private final SteamProfileService steamProfileService;
 
-  public AuthService(UserAccountRepository userAccountRepository) {
+  public AuthService(UserAccountRepository userAccountRepository, SteamProfileService steamProfileService) {
     this.userAccountRepository = userAccountRepository;
+    this.steamProfileService = steamProfileService;
   }
 
   @Transactional
@@ -36,10 +38,24 @@ public class AuthService {
 
   @Transactional
   public UserAccount loginSteamUser(String steamId, HttpServletRequest request) {
+    String steamDisplayName = steamProfileService.personName(steamId).orElse("Steam " + steamId);
     UserAccount user = userAccountRepository.findBySteamId(steamId)
-        .orElseGet(() -> userAccountRepository.save(new UserAccount("steam:" + steamId, "Steam " + steamId, steamId)));
+        .orElseGet(() -> userAccountRepository.save(new UserAccount("steam:" + steamId, steamDisplayName, steamId)));
+    if (shouldSyncSteamDisplayName(user, steamId, steamDisplayName)) {
+      user.setDisplayName(steamDisplayName);
+    }
     authenticate(user, request);
     return user;
+  }
+
+  private static boolean shouldSyncSteamDisplayName(UserAccount user, String steamId, String steamDisplayName) {
+    String currentName = user.getDisplayName();
+    return currentName == null
+        || currentName.isBlank()
+        || currentName.equals("Steam " + steamId)
+        || currentName.equals("steam:" + steamId)
+        || currentName.equals(steamId)
+        || currentName.equals(user.getUsername());
   }
 
   @Transactional
