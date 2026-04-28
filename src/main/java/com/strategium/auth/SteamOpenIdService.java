@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class SteamOpenIdService {
 
   private static final String STEAM_OPENID_URL = "https://steamcommunity.com/openid/login";
+  private static final String DEFAULT_LOCAL_BASE_URL = "http://localhost:8080";
   private static final Pattern STEAM_ID_PATTERN = Pattern.compile("https://steamcommunity\\.com/openid/id/(\\d+)");
 
   private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -26,15 +27,23 @@ public class SteamOpenIdService {
     this.publicBaseUrl = publicBaseUrl;
   }
 
-  public String authenticationUrl() {
-    String callback = publicBaseUrl + "/api/auth/steam/callback";
+  public String authenticationUrl(String requestBaseUrl) {
+    String baseUrl = resolvePublicBaseUrl(requestBaseUrl);
+    String callback = baseUrl + "/api/auth/steam/callback";
     return STEAM_OPENID_URL
         + "?openid.ns=" + enc("http://specs.openid.net/auth/2.0")
         + "&openid.mode=checkid_setup"
         + "&openid.return_to=" + enc(callback)
-        + "&openid.realm=" + enc(publicBaseUrl)
+        + "&openid.realm=" + enc(baseUrl)
         + "&openid.identity=" + enc("http://specs.openid.net/auth/2.0/identifier_select")
         + "&openid.claimed_id=" + enc("http://specs.openid.net/auth/2.0/identifier_select");
+  }
+
+  private String resolvePublicBaseUrl(String requestBaseUrl) {
+    if (publicBaseUrl != null && !publicBaseUrl.isBlank() && !DEFAULT_LOCAL_BASE_URL.equals(publicBaseUrl)) {
+      return trimTrailingSlash(publicBaseUrl);
+    }
+    return trimTrailingSlash(requestBaseUrl == null || requestBaseUrl.isBlank() ? DEFAULT_LOCAL_BASE_URL : requestBaseUrl);
   }
 
   public Optional<String> validateAndExtractSteamId(Map<String, String[]> queryParams) {
@@ -92,5 +101,9 @@ public class SteamOpenIdService {
 
   private static String enc(String value) {
     return URLEncoder.encode(value, StandardCharsets.UTF_8);
+  }
+
+  private static String trimTrailingSlash(String value) {
+    return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
   }
 }

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api")
@@ -60,8 +61,8 @@ public class AuthController {
 
   @GetMapping("/auth/steam/start")
   @ResponseStatus(HttpStatus.FOUND)
-  public void steamStart(jakarta.servlet.http.HttpServletResponse response) throws IOException {
-    response.sendRedirect(steamOpenIdService.authenticationUrl());
+  public void steamStart(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) throws IOException {
+    response.sendRedirect(steamOpenIdService.authenticationUrl(requestBaseUrl(request)));
   }
 
   @GetMapping("/auth/steam/callback")
@@ -81,5 +82,13 @@ public class AuthController {
       session.invalidate();
     }
     SecurityContextHolder.clearContext();
+  }
+
+  private static String requestBaseUrl(HttpServletRequest request) {
+    return ServletUriComponentsBuilder.fromRequestUri(request)
+        .replacePath(null)
+        .replaceQuery(null)
+        .build()
+        .toUriString();
   }
 }
