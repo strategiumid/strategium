@@ -2,9 +2,13 @@ package com.strategium.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.strategium.user.UserAccount;
+import com.strategium.user.UserAccountRepository;
+import com.strategium.user.UserRole;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +25,9 @@ class StrategiumApiTests {
   @Autowired
   private MockMvc mockMvc;
 
+  @Autowired
+  private UserAccountRepository userAccountRepository;
+
   @Test
   void newsEndpointReturnsSeededItems() throws Exception {
     mockMvc.perform(get("/api/news"))
@@ -29,29 +36,108 @@ class StrategiumApiTests {
   }
 
   @Test
+  void newsEndpointSupportsSearch() throws Exception {
+    mockMvc.perform(get("/api/news").param("q", "Stellaris"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].title").value("Stellaris — Open Beta Changelog"));
+  }
+
+  @Test
+  void regularUserCannotCreateNews() throws Exception {
+    HttpSession session = login("Regular");
+
+    mockMvc.perform(post("/api/news")
+            .session((org.springframework.mock.web.MockHttpSession) session)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(newsPayload()))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void adminCanCreateNews() throws Exception {
+    HttpSession session = login("Admin");
+    UserAccount admin = userAccountRepository.findByUsername("dev:admin").orElseThrow();
+    admin.setRole(UserRole.ADMIN);
+    userAccountRepository.save(admin);
+
+    mockMvc.perform(post("/api/news")
+            .session((org.springframework.mock.web.MockHttpSession) session)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(newsPayload()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.title").value("Test News"));
+  }
+
+  @Test
+  void divisionUnitCatalogAndCalculatorArePublic() throws Exception {
+    mockMvc.perform(get("/api/division-templates/units"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.lineBattalions[0].id").value("infantry"))
+        .andExpect(jsonPath("$.supportCompanies[0].id").value("eng"));
+
+    mockMvc.perform(post("/api/division-templates/calculate")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(divisionPayload()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.combatWidth").value(7))
+        .andExpect(jsonPath("$.battalionCount").value(3));
+  }
+
+  @Test
+  void authenticatedUserCanUpdateProfile() throws Exception {
+    HttpSession session = login("Old Name");
+
+    mockMvc.perform(put("/api/me")
+            .session((org.springframework.mock.web.MockHttpSession) session)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"displayName\":\"New Name\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.displayName").value("New Name"));
+  }
+
+  @Test
   void authenticatedUserCanSaveDivisionTemplate() throws Exception {
+    HttpSession session = login("Tester");
+
+    mockMvc.perform(post("/api/division-templates")
+            .session((org.springframework.mock.web.MockHttpSession) session)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(divisionPayload()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.stats.combatWidth").value(7))
+        .andExpect(jsonPath("$.stats.battalionCount").value(3));
+  }
+
+  private HttpSession login(String displayName) throws Exception {
     MvcResult login = mockMvc.perform(post("/api/auth/dev-login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"displayName\":\"Tester\"}"))
+            .content("{\"displayName\":\"" + displayName + "\"}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.authenticated").value(true))
         .andReturn();
+    return login.getRequest().getSession(false);
+  }
 
-    HttpSession session = login.getRequest().getSession(false);
-    String payload = """
+  private static String divisionPayload() {
+    return """
         {
           "name": "Infantry template",
           "lineSlots": ["infantry", "infantry", "artillery", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
           "supportSlots": ["eng", "recon", null, null, null]
         }
         """;
+  }
 
-    mockMvc.perform(post("/api/division-templates")
-            .session((org.springframework.mock.web.MockHttpSession) session)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(payload))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.stats.combatWidth").value(7))
-        .andExpect(jsonPath("$.stats.battalionCount").value(3));
+  private static String newsPayload() {
+    return """
+        {
+          "title": "Test News",
+          "text": "Backend news CRUD test",
+          "tag": "test",
+          "sourceName": "Strategium",
+          "sourceUrl": "https://strategium.example/news",
+          "publishedAt": "2026-04-28"
+        }
+        """;
   }
 }
