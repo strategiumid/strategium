@@ -9,4 +9,6 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, UUID> 
   Optional<UserAccount> findByUsername(String username);
 
   Optional<UserAccount> findBySteamId(String steamId);
+
+  Optional<UserAccount> findByVkId(String vkId);
 }

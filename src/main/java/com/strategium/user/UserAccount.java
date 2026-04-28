@@ -27,6 +27,17 @@ public class UserAccount {
   @Column(unique = true, length = 64)
   private String steamId;
 
+  @Column(unique = true, length = 64)
+  private String vkId;
+
+  @Column(length = 120)
+  private String vkDisplayName;
+
+  @Column(length = 1024)
+  private String vkAccessToken;
+
+  private Instant vkTokenExpiresAt;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   private UserRole role = UserRole.USER;
@@ -59,6 +70,22 @@ public class UserAccount {
     return steamId;
   }
 
+  public String getVkId() {
+    return vkId;
+  }
+
+  public String getVkDisplayName() {
+    return vkDisplayName;
+  }
+
+  public String getVkAccessToken() {
+    return vkAccessToken;
+  }
+
+  public Instant getVkTokenExpiresAt() {
+    return vkTokenExpiresAt;
+  }
+
   public UserRole getRole() {
     return role;
   }
@@ -73,5 +100,19 @@ public class UserAccount {
 
   public void setRole(UserRole role) {
     this.role = role;
+  }
+
+  public void linkVk(String vkId, String vkDisplayName, String vkAccessToken, Instant vkTokenExpiresAt) {
+    this.vkId = vkId;
+    this.vkDisplayName = vkDisplayName;
+    this.vkAccessToken = vkAccessToken;
+    this.vkTokenExpiresAt = vkTokenExpiresAt;
+  }
+
+  public void unlinkVk() {
+    this.vkId = null;
+    this.vkDisplayName = null;
+    this.vkAccessToken = null;
+    this.vkTokenExpiresAt = null;
   }
 }

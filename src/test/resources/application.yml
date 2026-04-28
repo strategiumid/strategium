@@ -19,6 +19,10 @@ strategium:
     sources:
   vk:
     access-token:
+    client-id:
+    client-secret:
+    redirect-uri:
+    oauth-scope: wall,offline
   steam:
     web-api-key:
     language: russian

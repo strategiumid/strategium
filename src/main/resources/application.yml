@@ -34,6 +34,10 @@ strategium:
     sources: ${PARADOX_NEWS_SOURCES:https://www.paradoxinteractive.com/games/cities-skylines-ii/news,https://www.paradoxinteractive.com/games/stellaris/news,https://www.paradoxinteractive.com/games/crusader-kings-iii/news,https://www.paradoxinteractive.com/games/hearts-of-iron-iv/news,https://www.paradoxinteractive.com/games/europa-universalis-iv/news,https://www.paradoxinteractive.com/games/victoria-3/news}
   vk:
     access-token: ${VK_ACCESS_TOKEN:}
+    client-id: ${VK_CLIENT_ID:}
+    client-secret: ${VK_CLIENT_SECRET:}
+    redirect-uri: ${VK_REDIRECT_URI:}
+    oauth-scope: ${VK_OAUTH_SCOPE:wall,offline}
     domain: ${VK_GROUP_DOMAIN:strategium}
     count: ${VK_POST_COUNT:8}
     source-name: ${VK_SOURCE_NAME:Strategium}
