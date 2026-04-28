@@ -1,0 +1,42 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: strategium
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/strategium;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+  flyway:
+    enabled: true
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+strategium:
+  public-base-url: ${STRATEGIUM_PUBLIC_BASE_URL:http://localhost:8080}
+  frontend-url: ${STRATEGIUM_FRONTEND_URL:http://localhost:5173}
+  cors:
+    allowed-origins: ${STRATEGIUM_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5500,null}
+  vk:
+    access-token: ${VK_ACCESS_TOKEN:}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/strategium}
+    username: ${SPRING_DATASOURCE_USERNAME:strategium}
+    password: ${SPRING_DATASOURCE_PASSWORD:strategium}
+    driver-class-name: org.postgresql.Driver
