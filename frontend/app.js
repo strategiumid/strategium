@@ -165,6 +165,9 @@ function renderVkFeed(posts) {
       vkMetric("Репосты", post.repostsCount),
       vkMetric("Просмотры", post.viewsCount)
     );
+    if (!post.fallback) {
+      footer.appendChild(renderVkPostActions(post));
+    }
 
     if (post.url && !post.fallback) {
       const link = document.createElement("a");
@@ -187,6 +190,56 @@ function renderVkFeed(posts) {
     article.appendChild(footer);
     vkList.appendChild(article);
   });
+}
+
+function renderVkPostActions(post) {
+  const actions = document.createElement("div");
+  actions.className = "vk-post-actions";
+
+  const likeButton = document.createElement("button");
+  likeButton.type = "button";
+  likeButton.textContent = "Лайк";
+  likeButton.disabled = !currentUser.authenticated || !currentUser.vkLinked;
+  likeButton.addEventListener("click", async () => {
+    try {
+      await apiFetch(`/api/feed/vk/posts/${encodeURIComponent(post.id)}/like`, { method: "POST" });
+      likeButton.textContent = "Лайк отправлен";
+      likeButton.disabled = true;
+    } catch {
+      likeButton.textContent = "Ошибка VK";
+    }
+  });
+
+  const form = document.createElement("form");
+  form.className = "vk-comment-form";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.maxLength = 2048;
+  input.placeholder = currentUser.vkLinked ? "Комментарий в VK..." : "Привяжите VK в настройках";
+  input.disabled = !currentUser.authenticated || !currentUser.vkLinked;
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  submit.textContent = "Отправить";
+  submit.disabled = input.disabled;
+  form.append(input, submit);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    try {
+      await apiFetch(`/api/feed/vk/posts/${encodeURIComponent(post.id)}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ message })
+      });
+      input.value = "";
+      input.placeholder = "Комментарий отправлен";
+    } catch {
+      input.placeholder = "Ошибка отправки в VK";
+    }
+  });
+
+  actions.append(likeButton, form);
+  return actions;
 }
 
 function renderVkAttachments(attachments) {
@@ -269,6 +322,54 @@ function setupFeedModal() {
   openTopBtn.addEventListener("click", openModal);
   closeBtn.addEventListener("click", closeModal);
   closeBg.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+}
+
+function renderSettings() {
+  const status = document.getElementById("vk-link-status");
+  const linkButton = document.getElementById("vk-link");
+  const unlinkButton = document.getElementById("vk-unlink");
+
+  if (!currentUser.authenticated) {
+    status.textContent = "Сначала войдите через Steam или Dev вход.";
+    linkButton.classList.add("hidden");
+    unlinkButton.classList.add("hidden");
+    return;
+  }
+
+  if (currentUser.vkLinked) {
+    status.textContent = `VK привязан: ${currentUser.vkDisplayName || "аккаунт VK"}`;
+    linkButton.classList.add("hidden");
+    unlinkButton.classList.remove("hidden");
+  } else {
+    status.textContent = "VK не привязан.";
+    linkButton.classList.remove("hidden");
+    unlinkButton.classList.add("hidden");
+  }
+}
+
+function setupSettingsModal() {
+  const modal = document.getElementById("settings-modal");
+  const openModal = async (event) => {
+    event.preventDefault();
+    modal.classList.remove("hidden");
+    await loadCurrentUser();
+    renderSettings();
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  document.getElementById("open-settings-modal").addEventListener("click", openModal);
+  document.getElementById("settings-modal-close").addEventListener("click", closeModal);
+  document.getElementById("settings-modal-close-bg").addEventListener("click", closeModal);
+  document.getElementById("vk-link").addEventListener("click", () => {
+    window.location.href = `${API_BASE_URL}/api/auth/vk/start`;
+  });
+  document.getElementById("vk-unlink").addEventListener("click", async () => {
+    currentUser = await apiFetch("/api/auth/vk/unlink", { method: "POST" });
+    renderCurrentUser();
+    renderSettings();
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
   });
@@ -683,6 +784,7 @@ setupSearch();
 setupSectionsMenu();
 setupAuth();
 setupFeedModal();
+setupSettingsModal();
 setupAchievementsModal();
 renderPalette();
 renderDivisionGrid();

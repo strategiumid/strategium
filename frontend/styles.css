@@ -304,6 +304,10 @@ body::before {
   width: min(980px, 96vw);
 }
 
+.settings-modal {
+  width: min(620px, 94vw);
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -470,6 +474,76 @@ body::before {
   padding: 3px 6px;
   font-size: 0.62rem;
   white-space: nowrap;
+}
+
+.settings-card {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #26354a;
+  background: #0a1018;
+  padding: 12px;
+}
+
+.settings-card h3 {
+  margin: 0;
+  color: #d9e4f4;
+  font-size: 0.82rem;
+}
+
+.settings-card p {
+  margin: 5px 0 0;
+  color: #93a5bd;
+  font-size: 0.7rem;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.vk-post-actions {
+  display: flex;
+  flex: 1 1 100%;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.vk-post-actions button,
+.vk-comment-form input {
+  border: 1px solid #344156;
+  background: #0d121a;
+  color: #d2dced;
+  font: inherit;
+  font-size: 0.65rem;
+  padding: 5px 8px;
+}
+
+.vk-post-actions button {
+  cursor: pointer;
+}
+
+.vk-post-actions button:disabled,
+.vk-comment-form input:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.vk-comment-form {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 260px;
+}
+
+.vk-comment-form input {
+  min-width: 0;
+  flex: 1;
 }
 
 .vk-item,
@@ -708,5 +782,7 @@ body::before {
   .achievements-layout { grid-template-columns: 1fr; }
   .steam-achievement { grid-template-columns: 42px 1fr; }
   .steam-achievement-state { grid-column: 2; justify-self: start; }
+  .settings-card { align-items: flex-start; flex-direction: column; }
+  .settings-actions { justify-content: flex-start; }
   .palette-grid { grid-template-columns: 1fr; }
 }
