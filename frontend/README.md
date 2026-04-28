@@ -19,3 +19,7 @@ python -m http.server 5173
 ```
 
 На Amvera frontend будет отдаваться Spring Boot приложением из того же контейнера, поэтому API вызывается с текущего домена автоматически.
+
+## Steam-достижения
+
+Модалка «Достижения» использует backend endpoints `/api/steam/games` и `/api/steam/achievements`. Для реальных данных backend должен быть запущен с `STEAM_WEB_API_KEY`, а пользователь должен войти через Steam.
