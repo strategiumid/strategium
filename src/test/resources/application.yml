@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:strategium-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+strategium:
+  public-base-url: http://localhost
+  frontend-url: http://localhost:5173
+  cors:
+    allowed-origins: http://localhost:5173,http://localhost:3000,http://127.0.0.1:5500,null
+  vk:
+    access-token:

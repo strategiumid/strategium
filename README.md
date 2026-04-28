@@ -1,0 +1,120 @@
+# StrategiumID
+
+StrategiumID разделён на независимый Java backend и отдельный frontend.
+
+- `src/main/java` и `src/main/resources` содержат Spring Boot 3 REST API.
+- `frontend/` содержит текущий статический интерфейс. В будущем его можно заменить на Vite, React, Vue или другой стек без переноса backend-кода.
+
+## Требования
+
+- Java 17+
+- Maven 3.9+
+- PostgreSQL для production-подобного запуска
+
+По умолчанию локальный профиль использует H2 в `./data/strategium`, поэтому PostgreSQL не нужен для первого старта.
+
+## Запуск Backend
+
+```bash
+mvn spring-boot:run
+```
+
+Backend будет доступен на [http://localhost:8080](http://localhost:8080).
+
+Тесты:
+
+```bash
+mvn test
+```
+
+## Запуск Frontend
+
+Запустите `frontend/index.html` через любой статический сервер:
+
+```bash
+cd frontend
+python -m http.server 5173
+```
+
+Откройте [http://localhost:5173](http://localhost:5173).
+
+По умолчанию frontend обращается к API по адресу `http://localhost:8080`. Если backend находится по другому адресу, задайте переменную перед подключением `app.js`:
+
+```html
+<script>
+  window.STRATEGIUM_API_BASE_URL = "http://localhost:8080";
+</script>
+```
+
+## Конфигурация
+
+Основные переменные окружения:
+
+- `SERVER_PORT` — HTTP-порт backend, по умолчанию `8080`.
+- `STRATEGIUM_PUBLIC_BASE_URL` — публичный URL backend для Steam OpenID callback, по умолчанию `http://localhost:8080`.
+- `STRATEGIUM_FRONTEND_URL` — URL frontend, куда backend вернёт пользователя после Steam-входа, по умолчанию `http://localhost:5173`.
+- `STRATEGIUM_CORS_ALLOWED_ORIGINS` — список разрешённых origin для frontend через запятую, по умолчанию `http://localhost:5173,http://localhost:3000,http://127.0.0.1:5500,null`.
+- `VK_ACCESS_TOKEN` — необязательный VK API token для `wall.get`.
+
+Запуск с PostgreSQL-профилем:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+```
+
+Переменные для PostgreSQL:
+
+- `SPRING_DATASOURCE_URL`, по умолчанию `jdbc:postgresql://localhost:5432/strategium`
+- `SPRING_DATASOURCE_USERNAME`, по умолчанию `strategium`
+- `SPRING_DATASOURCE_PASSWORD`, по умолчанию `strategium`
+
+## Git Convention
+
+В проекте используется формат Conventional Commits:
+
+```text
+type(scope): краткое описание на русском
+```
+
+Рекомендуемые типы:
+
+- `feat` — новая функциональность.
+- `fix` — исправление ошибки.
+- `refactor` — изменение структуры без изменения поведения.
+- `test` — тесты.
+- `docs` — документация.
+- `chore` — инфраструктура, настройки, служебные изменения.
+
+Примеры:
+
+```text
+feat(auth): добавить вход через Steam
+fix(feed): обработать пустой ответ VK
+docs(readme): описать локальный запуск
+```
+
+## API
+
+- `GET /api/news` — список новостей Strategium/Paradox из seed-данных.
+- `GET /api/feed/vk/strategium` — backend-прокси VK-ленты с fallback-ответом.
+- `GET /api/me` — текущий пользователь сессии или гость.
+- `POST /api/auth/dev-login` — локальный dev-вход, тело: `{ "displayName": "Tester" }`.
+- `GET /api/auth/steam/start` — начало Steam OpenID входа.
+- `GET /api/auth/steam/callback` — Steam OpenID callback.
+- `POST /api/auth/logout` — выход и очистка сессии.
+- `GET /api/division-templates` — список шаблонов текущего пользователя.
+- `POST /api/division-templates` — создание шаблона.
+- `PUT /api/division-templates/{id}` — обновление шаблона.
+- `DELETE /api/division-templates/{id}` — удаление шаблона.
+
+Пример тела для шаблона дивизии:
+
+```json
+{
+  "name": "Пехотный шаблон",
+  "lineSlots": ["infantry", "infantry", "artillery", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+  "supportSlots": ["eng", "recon", null, null, null]
+}
+```
+
+Backend сам пересчитывает боевую ширину, организацию, атаки, количество батальонов/рот поддержки и стоимость опыта перед сохранением.
