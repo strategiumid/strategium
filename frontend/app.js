@@ -1,4 +1,11 @@
-const API_BASE_URL = window.STRATEGIUM_API_BASE_URL || "http://localhost:8080";
+const localFrontendOrigins = new Set([
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5500"
+]);
+
+const API_BASE_URL = window.STRATEGIUM_API_BASE_URL
+  || (localFrontendOrigins.has(window.location.origin) ? "http://localhost:8080" : window.location.origin);
 
 const fallbackNews = [
   {
