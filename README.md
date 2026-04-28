@@ -89,6 +89,10 @@ python -m http.server 5173
 - `PARADOX_NEWS_CACHE_TTL_MINUTES` — время кэширования новостей Paradox в минутах, по умолчанию `30`.
 - `PARADOX_NEWS_SOURCES` — список официальных страниц Paradox `/games/.../news` через запятую.
 - `VK_ACCESS_TOKEN` — необязательный VK API token для `wall.get`.
+- `VK_GROUP_DOMAIN` — короткое имя VK-группы для ленты, по умолчанию `strategium`.
+- `VK_POST_COUNT` — количество постов VK, по умолчанию `8`, максимум `25`.
+- `VK_SOURCE_NAME` — имя источника в карточках VK, по умолчанию `Strategium`.
+- `VK_SOURCE_AVATAR_URL` — URL аватара источника для карточек VK.
 
 Запуск с PostgreSQL-профилем:
 
@@ -130,7 +134,7 @@ docs(readme): описать локальный запуск
 ## API
 
 - `GET /api/news` — список новостей Strategium/Paradox. Backend автоматически подтягивает официальные новости Paradox Interactive и использует локальные seed-новости как fallback.
-- `GET /api/feed/vk/strategium` — backend-прокси VK-ленты с fallback-ответом.
+- `GET /api/feed/vk/strategium` — backend-прокси VK-ленты с текстом постов, вложениями, метриками и fallback-ответом.
 - `GET /api/me` — текущий пользователь сессии или гость.
 - `POST /api/auth/dev-login` — локальный dev-вход, тело: `{ "displayName": "Tester" }`.
 - `GET /api/auth/steam/start` — начало Steam OpenID входа.

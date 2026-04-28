@@ -120,30 +120,113 @@ function renderVkFeed(posts) {
 
   posts.forEach((post) => {
     const article = document.createElement("article");
-    article.className = "vk-item";
-    const title = document.createElement("h3");
-    title.textContent = post.title;
-    const text = document.createElement("p");
-    text.textContent = post.text;
+    article.className = `vk-item ${post.fallback ? "fallback" : ""}`;
+
+    const header = document.createElement("header");
+    header.className = "vk-post-header";
+    const avatar = document.createElement("div");
+    avatar.className = "vk-avatar";
+    if (post.authorAvatarUrl) {
+      const avatarImg = document.createElement("img");
+      avatarImg.src = post.authorAvatarUrl;
+      avatarImg.alt = post.authorName || "VK";
+      avatar.appendChild(avatarImg);
+    } else {
+      avatar.textContent = (post.authorName || "VK").slice(0, 2).toUpperCase();
+    }
+    const meta = document.createElement("div");
+    const author = document.createElement("a");
+    author.className = "vk-author";
+    author.href = post.url || "https://vk.com/strategium";
+    author.target = "_blank";
+    author.rel = "noopener noreferrer";
+    author.textContent = post.authorName || "Strategium";
     const time = document.createElement("time");
     time.textContent = post.date;
-    article.append(title, text, time);
+    meta.append(author, time);
+    header.append(avatar, meta);
 
-    if (post.url) {
+    const text = document.createElement("p");
+    text.className = "vk-post-text";
+    text.textContent = post.text;
+    article.append(header, text);
+
+    if (post.attachments?.length) {
+      article.appendChild(renderVkAttachments(post.attachments));
+    }
+
+    const footer = document.createElement("footer");
+    footer.className = "vk-post-footer";
+    footer.append(
+      vkMetric("Нравится", post.likesCount),
+      vkMetric("Комментарии", post.commentsCount),
+      vkMetric("Репосты", post.repostsCount),
+      vkMetric("Просмотры", post.viewsCount)
+    );
+
+    if (post.url && !post.fallback) {
       const link = document.createElement("a");
+      link.className = "vk-open-link";
       link.href = post.url;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = "Открыть пост";
-      article.appendChild(link);
+      link.textContent = "Открыть в VK";
+      footer.appendChild(link);
     }
     if (post.fallback) {
-      const fallback = document.createElement("p");
-      fallback.textContent = "Показаны резервные данные.";
-      article.appendChild(fallback);
+      const fallbackLink = document.createElement("a");
+      fallbackLink.className = "vk-open-link";
+      fallbackLink.href = post.url || "https://vk.com/strategium";
+      fallbackLink.target = "_blank";
+      fallbackLink.rel = "noopener noreferrer";
+      fallbackLink.textContent = "Открыть группу";
+      footer.appendChild(fallbackLink);
     }
+    article.appendChild(footer);
     vkList.appendChild(article);
   });
+}
+
+function renderVkAttachments(attachments) {
+  const wrap = document.createElement("div");
+  wrap.className = "vk-attachments";
+  attachments.forEach((attachment) => {
+    if (attachment.type === "photo" && attachment.imageUrl) {
+      const img = document.createElement("img");
+      img.src = attachment.imageUrl;
+      img.alt = "Фото из VK";
+      wrap.appendChild(img);
+      return;
+    }
+
+    const card = document.createElement("a");
+    card.className = `vk-attachment-card ${attachment.type || "link"}`;
+    card.href = attachment.url || "#";
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+    if (attachment.imageUrl) {
+      const img = document.createElement("img");
+      img.src = attachment.imageUrl;
+      img.alt = attachment.title || "Вложение VK";
+      card.appendChild(img);
+    }
+    const body = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = attachment.title || "Вложение";
+    const description = document.createElement("span");
+    description.textContent = attachment.description || attachment.type || "";
+    body.append(title, description);
+    card.appendChild(body);
+    wrap.appendChild(card);
+  });
+  return wrap;
+}
+
+function vkMetric(label, value) {
+  const metric = document.createElement("span");
+  metric.className = "vk-metric";
+  metric.textContent = `${label}: ${Number(value || 0)}`;
+  return metric;
 }
 
 async function loadVkStrategiumFeed() {
@@ -151,10 +234,18 @@ async function loadVkStrategiumFeed() {
     renderVkFeed(await apiFetch("/api/feed/vk/strategium"));
   } catch {
     renderVkFeed([{
+      id: "fallback",
       title: "Strategium — новости",
       text: "Не удалось загрузить ленту автоматически в этом окружении. Откройте группу напрямую.",
       date: "Сейчас",
       url: "https://vk.com/strategium",
+      authorName: "Strategium",
+      authorAvatarUrl: "",
+      likesCount: 0,
+      commentsCount: 0,
+      repostsCount: 0,
+      viewsCount: 0,
+      attachments: [],
       fallback: true
     }]);
   }
