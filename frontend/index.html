@@ -12,6 +12,7 @@
       <a href="#">Главная</a>
       <a href="#" id="open-feed-modal-top">Лента</a>
       <a href="#" id="open-tools-modal">Инструменты</a>
+      <a href="#" id="open-achievements-modal-top">Достижения</a>
       <a href="#">Поддержка</a>
     </nav>
     <div class="top-right">
@@ -19,6 +20,7 @@
         <button id="sections-toggle" class="sections-btn">Разделы</button>
         <div id="sections-list" class="sections-list hidden">
           <a href="#" id="open-feed-modal">Лента</a>
+          <a href="#" id="open-achievements-modal">Достижения Steam</a>
           <a href="#">Сообщения</a>
           <a href="#">Гайды</a>
           <a href="#">Кланы</a>
@@ -86,6 +88,22 @@
       </header>
       <div class="modal-subtitle">Источник: <a href="https://vk.com/strategium" target="_blank" rel="noopener noreferrer">vk.com/strategium</a></div>
       <div id="vk-feed-list" class="vk-feed-list"></div>
+    </section>
+  </div>
+
+  <div id="achievements-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="achievements-modal-title">
+    <div class="modal-backdrop" id="achievements-modal-close-bg"></div>
+    <section class="modal-content achievements-modal">
+      <header class="modal-header">
+        <h2 id="achievements-modal-title">Достижения Steam по играм Paradox</h2>
+        <button id="achievements-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Показываются только выбранные игры Paradox Interactive из Steam-профиля.</div>
+      <div id="achievements-status" class="template-status"></div>
+      <div class="achievements-layout">
+        <aside id="steam-games-list" class="steam-games-list"></aside>
+        <section id="steam-achievements-list" class="steam-achievements-list"></section>
+      </div>
     </section>
   </div>
 

@@ -29,6 +29,8 @@ const fallbackNews = [
 let currentNews = fallbackNews;
 let currentUser = { authenticated: false, displayName: "Гость" };
 let activeTemplateId = null;
+let steamAchievementSummary = null;
+let selectedSteamGameSlug = null;
 
 async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -267,6 +269,144 @@ function setupFeedModal() {
   openTopBtn.addEventListener("click", openModal);
   closeBtn.addEventListener("click", closeModal);
   closeBg.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+}
+
+function setAchievementsStatus(message) {
+  document.getElementById("achievements-status").textContent = message;
+}
+
+function renderSteamGames(games) {
+  const gamesList = document.getElementById("steam-games-list");
+  gamesList.innerHTML = "";
+  games.forEach((game) => {
+    const button = document.createElement("button");
+    button.className = `steam-game-item ${selectedSteamGameSlug === game.slug ? "active" : ""} ${game.available ? "" : "unavailable"}`;
+    button.type = "button";
+    button.dataset.gameSlug = game.slug;
+
+    const title = document.createElement("strong");
+    title.textContent = game.title;
+    const meta = document.createElement("span");
+    meta.textContent = game.available
+      ? `${game.unlockedCount}/${game.totalCount} • ${game.progressPercent}%`
+      : "недоступно";
+    const bar = document.createElement("div");
+    bar.className = "steam-progress-bar";
+    const fill = document.createElement("i");
+    fill.style.width = `${Math.max(0, Math.min(100, game.progressPercent || 0))}%`;
+    bar.appendChild(fill);
+    button.append(title, meta, bar);
+    button.addEventListener("click", async () => {
+      selectedSteamGameSlug = game.slug;
+      renderSteamGames(steamAchievementSummary.games);
+      renderSteamAchievements(game);
+    });
+    gamesList.appendChild(button);
+  });
+}
+
+function renderSteamAchievements(game) {
+  const list = document.getElementById("steam-achievements-list");
+  list.innerHTML = "";
+
+  const header = document.createElement("div");
+  header.className = "steam-achievements-head";
+  const title = document.createElement("h3");
+  title.textContent = game.title;
+  const progress = document.createElement("span");
+  progress.textContent = game.available
+    ? `${game.unlockedCount}/${game.totalCount} достижений, ${game.progressPercent}%`
+    : game.message || "Достижения недоступны.";
+  header.append(title, progress);
+  list.appendChild(header);
+
+  if (!game.available) {
+    const empty = document.createElement("p");
+    empty.className = "steam-empty";
+    empty.textContent = game.message || "Steam не вернул достижения по этой игре.";
+    list.appendChild(empty);
+    return;
+  }
+
+  if (!game.achievements.length) {
+    const empty = document.createElement("p");
+    empty.className = "steam-empty";
+    empty.textContent = "У игры нет достижений в ответе Steam.";
+    list.appendChild(empty);
+    return;
+  }
+
+  game.achievements.forEach((achievement) => {
+    const item = document.createElement("article");
+    item.className = `steam-achievement ${achievement.achieved ? "achieved" : ""}`;
+    const icon = document.createElement("div");
+    icon.className = "steam-achievement-icon";
+    const imageUrl = achievement.achieved ? achievement.iconUrl : (achievement.iconGrayUrl || achievement.iconUrl);
+    if (imageUrl) {
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.alt = achievement.name;
+      icon.appendChild(img);
+    } else {
+      icon.textContent = achievement.achieved ? "OK" : "LOCK";
+    }
+
+    const body = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = achievement.name || achievement.apiName;
+    const description = document.createElement("p");
+    description.textContent = achievement.description || "Описание скрыто в Steam.";
+    body.append(name, description);
+
+    const state = document.createElement("span");
+    state.className = "steam-achievement-state";
+    state.textContent = achievement.achieved ? "Получено" : "Не получено";
+    item.append(icon, body, state);
+    list.appendChild(item);
+  });
+}
+
+async function loadSteamAchievements() {
+  if (!currentUser.authenticated || !currentUser.steamId) {
+    steamAchievementSummary = null;
+    selectedSteamGameSlug = null;
+    document.getElementById("steam-games-list").innerHTML = "";
+    document.getElementById("steam-achievements-list").innerHTML = "";
+    setAchievementsStatus("Войдите через Steam, чтобы увидеть свои достижения. Dev вход не привязан к SteamID.");
+    return;
+  }
+
+  setAchievementsStatus("Загружаем достижения из Steam...");
+  try {
+    steamAchievementSummary = await apiFetch("/api/steam/achievements");
+    const games = steamAchievementSummary.games || [];
+    selectedSteamGameSlug = games[0]?.slug || null;
+    renderSteamGames(games);
+    if (games[0]) renderSteamAchievements(games[0]);
+    setAchievementsStatus(games.length ? "" : "Нет настроенных игр Paradox.");
+  } catch {
+    steamAchievementSummary = null;
+    selectedSteamGameSlug = null;
+    setAchievementsStatus("Не удалось загрузить достижения. Проверьте Steam-вход, STEAM_WEB_API_KEY и приватность профиля.");
+  }
+}
+
+function setupAchievementsModal() {
+  const modal = document.getElementById("achievements-modal");
+  const openModal = async (event) => {
+    event.preventDefault();
+    modal.classList.remove("hidden");
+    await loadCurrentUser();
+    await loadSteamAchievements();
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  document.getElementById("open-achievements-modal").addEventListener("click", openModal);
+  document.getElementById("open-achievements-modal-top").addEventListener("click", openModal);
+  document.getElementById("achievements-modal-close").addEventListener("click", closeModal);
+  document.getElementById("achievements-modal-close-bg").addEventListener("click", closeModal);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
   });
@@ -530,6 +670,8 @@ function setupAuth() {
     await apiFetch("/api/auth/logout", { method: "POST" });
     currentUser = { authenticated: false, displayName: "Гость" };
     activeTemplateId = null;
+    steamAchievementSummary = null;
+    selectedSteamGameSlug = null;
     renderCurrentUser();
     resetDivisionTemplate();
     await loadTemplates();
@@ -541,6 +683,7 @@ setupSearch();
 setupSectionsMenu();
 setupAuth();
 setupFeedModal();
+setupAchievementsModal();
 renderPalette();
 renderDivisionGrid();
 renderDivisionStats();
