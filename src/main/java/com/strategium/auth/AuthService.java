@@ -4,12 +4,15 @@ import com.strategium.user.UserAccount;
 import com.strategium.user.UserAccountRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
@@ -35,6 +38,15 @@ public class AuthService {
   public UserAccount loginSteamUser(String steamId, HttpServletRequest request) {
     UserAccount user = userAccountRepository.findBySteamId(steamId)
         .orElseGet(() -> userAccountRepository.save(new UserAccount("steam:" + steamId, "Steam " + steamId, steamId)));
+    authenticate(user, request);
+    return user;
+  }
+
+  @Transactional
+  public UserAccount updateDisplayName(UUID userId, String displayName, HttpServletRequest request) {
+    UserAccount user = userAccountRepository.findById(userId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required"));
+    user.setDisplayName(displayName.trim());
     authenticate(user, request);
     return user;
   }

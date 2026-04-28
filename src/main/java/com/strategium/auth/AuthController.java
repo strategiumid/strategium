@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -41,6 +42,15 @@ public class AuthController {
     return currentUserService.currentUser()
         .map(UserResponse::from)
         .orElseGet(UserResponse::guest);
+  }
+
+  @PutMapping("/me")
+  public UserResponse updateMe(@Valid @RequestBody UpdateProfileRequest request, HttpServletRequest servletRequest) {
+    return UserResponse.from(authService.updateDisplayName(
+        currentUserService.requireUser().getId(),
+        request.displayName(),
+        servletRequest
+    ));
   }
 
   @PostMapping("/auth/dev-login")

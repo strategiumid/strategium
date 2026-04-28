@@ -70,4 +70,8 @@ public class UserAccount {
   public void setDisplayName(String displayName) {
     this.displayName = displayName;
   }
+
+  public void setRole(UserRole role) {
+    this.role = role;
+  }
 }

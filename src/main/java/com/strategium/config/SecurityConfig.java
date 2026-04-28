@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -26,7 +27,11 @@ public class SecurityConfig {
         .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/h2-console/**").permitAll()
-            .requestMatchers("/api/news", "/api/feed/**", "/api/me", "/api/auth/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/news", "/api/news/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/me").permitAll()
+            .requestMatchers("/api/feed/**", "/api/auth/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/division-templates/units").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/division-templates/calculate").permitAll()
             .requestMatchers("/api/**").authenticated()
             .anyRequest().permitAll()
         )
