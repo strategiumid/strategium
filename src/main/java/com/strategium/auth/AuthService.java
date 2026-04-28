@@ -67,6 +67,29 @@ public class AuthService {
     return user;
   }
 
+  @Transactional
+  public UserAccount linkVkUser(UUID userId, VkOAuthService.VkOAuthAccount vkAccount, HttpServletRequest request) {
+    UserAccount user = userAccountRepository.findById(userId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required"));
+    userAccountRepository.findByVkId(vkAccount.vkId())
+        .filter(existingUser -> !existingUser.getId().equals(userId))
+        .ifPresent(existingUser -> {
+          throw new ResponseStatusException(HttpStatus.CONFLICT, "VK account is already linked to another user");
+        });
+    user.linkVk(vkAccount.vkId(), vkAccount.displayName(), vkAccount.accessToken(), vkAccount.expiresAt());
+    authenticate(user, request);
+    return user;
+  }
+
+  @Transactional
+  public UserAccount unlinkVkUser(UUID userId, HttpServletRequest request) {
+    UserAccount user = userAccountRepository.findById(userId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required"));
+    user.unlinkVk();
+    authenticate(user, request);
+    return user;
+  }
+
   public void authenticate(UserAccount user, HttpServletRequest request) {
     AuthenticatedUser principal = new AuthenticatedUser(user);
     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

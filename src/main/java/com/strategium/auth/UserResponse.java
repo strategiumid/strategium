@@ -8,14 +8,24 @@ public record UserResponse(
     String username,
     String displayName,
     String steamId,
+    boolean vkLinked,
+    String vkDisplayName,
     boolean authenticated
 ) {
 
   public static UserResponse guest() {
-    return new UserResponse(null, "guest", "Гость", null, false);
+    return new UserResponse(null, "guest", "Гость", null, false, null, false);
   }
 
   public static UserResponse from(UserAccount user) {
-    return new UserResponse(user.getId(), user.getUsername(), user.getDisplayName(), user.getSteamId(), true);
+    return new UserResponse(
+        user.getId(),
+        user.getUsername(),
+        user.getDisplayName(),
+        user.getSteamId(),
+        user.getVkId() != null && !user.getVkId().isBlank(),
+        user.getVkDisplayName(),
+        true
+    );
   }
 }

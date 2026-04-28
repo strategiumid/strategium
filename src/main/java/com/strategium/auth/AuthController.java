@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.io.IOException;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,17 +25,20 @@ public class AuthController {
   private final CurrentUserService currentUserService;
   private final AuthService authService;
   private final SteamOpenIdService steamOpenIdService;
+  private final VkOAuthService vkOAuthService;
   private final String frontendUrl;
 
   public AuthController(
       CurrentUserService currentUserService,
       AuthService authService,
       SteamOpenIdService steamOpenIdService,
+      VkOAuthService vkOAuthService,
       @Value("${strategium.frontend-url}") String frontendUrl
   ) {
     this.currentUserService = currentUserService;
     this.authService = authService;
     this.steamOpenIdService = steamOpenIdService;
+    this.vkOAuthService = vkOAuthService;
     this.frontendUrl = frontendUrl;
   }
 
@@ -72,6 +76,35 @@ public class AuthController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Steam authentication failed"));
     authService.loginSteamUser(steamId, request);
     response.sendRedirect(frontendUrl);
+  }
+
+  @GetMapping("/auth/vk/start")
+  @ResponseStatus(HttpStatus.FOUND)
+  public void vkStart(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) throws IOException {
+    currentUserService.requireUser();
+    String state = UUID.randomUUID().toString();
+    request.getSession(true).setAttribute("VK_OAUTH_STATE", state);
+    response.sendRedirect(vkOAuthService.authorizationUrl(requestBaseUrl(request), state));
+  }
+
+  @GetMapping("/auth/vk/callback")
+  @ResponseStatus(HttpStatus.FOUND)
+  public void vkCallback(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) throws IOException {
+    String expectedState = (String) request.getSession(true).getAttribute("VK_OAUTH_STATE");
+    String actualState = request.getParameter("state");
+    request.getSession(true).removeAttribute("VK_OAUTH_STATE");
+    if (expectedState == null || actualState == null || !expectedState.equals(actualState)) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "VK OAuth state mismatch");
+    }
+
+    VkOAuthService.VkOAuthAccount vkAccount = vkOAuthService.exchangeCode(request.getParameter("code"), requestBaseUrl(request));
+    authService.linkVkUser(currentUserService.requireUser().getId(), vkAccount, request);
+    response.sendRedirect(frontendUrl);
+  }
+
+  @PostMapping("/auth/vk/unlink")
+  public UserResponse unlinkVk(HttpServletRequest request) {
+    return UserResponse.from(authService.unlinkVkUser(currentUserService.requireUser().getId(), request));
   }
 
   @PostMapping("/auth/logout")
