@@ -23,3 +23,7 @@ python -m http.server 5173
 ## Steam-достижения
 
 Модалка «Достижения» использует backend endpoints `/api/steam/games` и `/api/steam/achievements`. Для реальных данных backend должен быть запущен с `STEAM_WEB_API_KEY`, а пользователь должен войти через Steam. В каталоге отображаются только поддерживаемые игры, включая Paradox Interactive и «Бесконечное лето».
+
+## VK-привязка
+
+Модалка «Настройки» позволяет привязать VK через `/api/auth/vk/start`. После привязки в карточках VK-ленты становятся доступны лайк и отправка комментария через backend endpoints `/api/feed/vk/posts/{postId}/like` и `/api/feed/vk/posts/{postId}/comments`.

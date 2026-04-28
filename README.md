@@ -89,12 +89,18 @@ python -m http.server 5173
 - `PARADOX_NEWS_CACHE_TTL_MINUTES` — время кэширования новостей Paradox в минутах, по умолчанию `30`.
 - `PARADOX_NEWS_SOURCES` — список официальных страниц Paradox `/games/.../news` через запятую.
 - `VK_ACCESS_TOKEN` — необязательный VK API token для `wall.get`.
+- `VK_CLIENT_ID` — ID VK OAuth-приложения для привязки VK-аккаунта пользователя.
+- `VK_CLIENT_SECRET` — защищённый ключ VK OAuth-приложения.
+- `VK_REDIRECT_URI` — callback URL VK OAuth, например `https://your-domain.amvera.io/api/auth/vk/callback`. Если пусто, backend соберёт URL из текущего запроса.
+- `VK_OAUTH_SCOPE` — права user token для действий с постами, по умолчанию `wall,offline`.
 - `VK_GROUP_DOMAIN` — короткое имя VK-группы для ленты, по умолчанию `strategium`.
 - `VK_POST_COUNT` — количество постов VK, по умолчанию `8`, максимум `25`.
 - `VK_SOURCE_NAME` — имя источника в карточках VK, по умолчанию `Strategium`.
 - `VK_SOURCE_AVATAR_URL` — URL аватара источника для карточек VK.
 - `STEAM_WEB_API_KEY` — ключ Steam Web API для загрузки достижений пользователя. Получается на https://steamcommunity.com/dev/apikey.
 - `STEAM_LANGUAGE` — язык названий и описаний достижений Steam, по умолчанию `russian`.
+
+Для действий с VK-постами пользователю нужно войти на сайт и привязать VK в настройках. `VK_ACCESS_TOKEN` используется для чтения ленты, а лайки и комментарии отправляются через user token конкретного пользователя после VK OAuth.
 
 Для достижений Steam пользователь должен войти через Steam, а его профиль и игровые данные должны быть доступны настройками приватности Steam.
 
@@ -139,6 +145,8 @@ docs(readme): описать локальный запуск
 
 - `GET /api/news` — список новостей Strategium/Paradox. Backend автоматически подтягивает официальные новости Paradox Interactive и использует локальные seed-новости как fallback.
 - `GET /api/feed/vk/strategium` — backend-прокси VK-ленты с текстом постов, вложениями, метриками и fallback-ответом.
+- `POST /api/feed/vk/posts/{ownerId}_{postId}/like` — поставить лайк VK-посту от имени привязанного VK-пользователя.
+- `POST /api/feed/vk/posts/{ownerId}_{postId}/comments` — оставить комментарий VK-посту от имени привязанного VK-пользователя, тело: `{ "message": "Текст" }`.
 - `GET /api/steam/games` — публичный каталог поддерживаемых игр в Steam: Paradox Interactive и дополнительные игры сообщества.
 - `GET /api/steam/achievements` — достижения текущего Steam-пользователя только по поддерживаемым играм, отсортированные по доступности и прогрессу.
 - `GET /api/steam/achievements?game=hearts-of-iron-iv` — достижения текущего пользователя по одной игре.
@@ -146,6 +154,9 @@ docs(readme): описать локальный запуск
 - `POST /api/auth/dev-login` — локальный dev-вход, тело: `{ "displayName": "Tester" }`.
 - `GET /api/auth/steam/start` — начало Steam OpenID входа.
 - `GET /api/auth/steam/callback` — Steam OpenID callback.
+- `GET /api/auth/vk/start` — начало VK OAuth для привязки VK к текущему аккаунту.
+- `GET /api/auth/vk/callback` — VK OAuth callback.
+- `POST /api/auth/vk/unlink` — отвязать VK от текущего аккаунта.
 - `POST /api/auth/logout` — выход и очистка сессии.
 - `GET /api/division-templates` — список шаблонов текущего пользователя.
 - `POST /api/division-templates` — создание шаблона.

@@ -102,6 +102,40 @@ class StrategiumApiTests {
   }
 
   @Test
+  void currentUserResponseIncludesVkLinkState() throws Exception {
+    HttpSession session = login("Tester");
+
+    mockMvc.perform(get("/api/me")
+            .session((org.springframework.mock.web.MockHttpSession) session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vkLinked").value(false));
+  }
+
+  @Test
+  void vkOAuthStartRequiresConfiguration() throws Exception {
+    HttpSession session = login("Tester");
+
+    mockMvc.perform(get("/api/auth/vk/start")
+            .session((org.springframework.mock.web.MockHttpSession) session))
+        .andExpect(status().isServiceUnavailable());
+  }
+
+  @Test
+  void vkPostActionsRequireLinkedVkAccount() throws Exception {
+    HttpSession session = login("Tester");
+
+    mockMvc.perform(post("/api/feed/vk/posts/-1_1/like")
+            .session((org.springframework.mock.web.MockHttpSession) session))
+        .andExpect(status().isBadRequest());
+
+    mockMvc.perform(post("/api/feed/vk/posts/-1_1/comments")
+            .session((org.springframework.mock.web.MockHttpSession) session)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"message\":\"\"}"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void authenticatedUserCanUpdateProfile() throws Exception {
     HttpSession session = login("Old Name");
 
