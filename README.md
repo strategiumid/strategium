@@ -85,6 +85,9 @@ python -m http.server 5173
 - `STRATEGIUM_PUBLIC_BASE_URL` — публичный URL backend для Steam OpenID callback, по умолчанию `http://localhost:8080`.
 - `STRATEGIUM_FRONTEND_URL` — URL frontend, куда backend вернёт пользователя после Steam-входа, по умолчанию `http://localhost:5173`.
 - `STRATEGIUM_CORS_ALLOWED_ORIGINS` — список разрешённых origin для frontend через запятую, по умолчанию `http://localhost:5173,http://localhost:3000,http://127.0.0.1:5500,null`.
+- `PARADOX_NEWS_ENABLED` — включает автоматическую загрузку новостей Paradox, по умолчанию `true`.
+- `PARADOX_NEWS_CACHE_TTL_MINUTES` — время кэширования новостей Paradox в минутах, по умолчанию `30`.
+- `PARADOX_NEWS_SOURCES` — список официальных страниц Paradox `/games/.../news` через запятую.
 - `VK_ACCESS_TOKEN` — необязательный VK API token для `wall.get`.
 
 Запуск с PostgreSQL-профилем:
@@ -126,7 +129,7 @@ docs(readme): описать локальный запуск
 
 ## API
 
-- `GET /api/news` — список новостей Strategium/Paradox из seed-данных.
+- `GET /api/news` — список новостей Strategium/Paradox. Backend автоматически подтягивает официальные новости Paradox Interactive и использует локальные seed-новости как fallback.
 - `GET /api/feed/vk/strategium` — backend-прокси VK-ленты с fallback-ответом.
 - `GET /api/me` — текущий пользователь сессии или гость.
 - `POST /api/auth/dev-login` — локальный dev-вход, тело: `{ "displayName": "Tester" }`.

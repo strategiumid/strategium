@@ -24,4 +24,15 @@ public record NewsItemResponse(
         item.getSourceUrl()
     );
   }
+
+  public static NewsItemResponse external(
+      LocalDate date,
+      String title,
+      String text,
+      String tag,
+      String sourceName,
+      String sourceUrl
+  ) {
+    return new NewsItemResponse(null, date, title, text, tag, sourceName, sourceUrl);
+  }
 }
