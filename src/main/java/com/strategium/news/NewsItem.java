@@ -73,4 +73,13 @@ public class NewsItem {
   public LocalDate getPublishedAt() {
     return publishedAt;
   }
+
+  public void update(String title, String text, String tag, String sourceName, String sourceUrl, LocalDate publishedAt) {
+    this.title = title;
+    this.text = text;
+    this.tag = tag;
+    this.sourceName = sourceName;
+    this.sourceUrl = sourceUrl;
+    this.publishedAt = publishedAt;
+  }
 }
