@@ -33,6 +33,16 @@ public class DivisionTemplateController {
     return divisionTemplateService.findAll(currentUserService.requireUser());
   }
 
+  @GetMapping("/units")
+  public DivisionUnitCatalogResponse unitCatalog() {
+    return divisionTemplateService.unitCatalog();
+  }
+
+  @PostMapping("/calculate")
+  public DivisionStats calculate(@Valid @RequestBody DivisionTemplateRequest request) {
+    return divisionTemplateService.calculateStats(request);
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public DivisionTemplateResponse create(@Valid @RequestBody DivisionTemplateRequest request) {

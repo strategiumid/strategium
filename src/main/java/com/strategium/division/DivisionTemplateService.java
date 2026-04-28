@@ -2,9 +2,11 @@ package com.strategium.division;
 
 import com.strategium.user.UserAccount;
 import java.util.Arrays;
+import java.util.function.Function;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,25 +15,31 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class DivisionTemplateService {
 
-  private static final Map<String, LineUnit> LINE_UNITS = Map.of(
-      "infantry", new LineUnit(2, 25, 60, 12, 1),
-      "artillery", new LineUnit(3, 12, 20, 36, 2),
-      "motorized", new LineUnit(2, 24, 58, 14, 2),
-      "mechanized", new LineUnit(2, 30, 52, 18, 6),
-      "medium_tank", new LineUnit(2, 18, 30, 26, 24),
-      "aa_line", new LineUnit(1, 10, 20, 3, 12),
-      "at_line", new LineUnit(1, 10, 20, 2, 20)
+  private static final List<LineUnit> LINE_UNITS = List.of(
+      new LineUnit("infantry", "Пехота", "INF", 2, 25, 60, 12, 1),
+      new LineUnit("artillery", "Артиллерия", "ART", 3, 12, 20, 36, 2),
+      new LineUnit("motorized", "Мотопехота", "MOT", 2, 24, 58, 14, 2),
+      new LineUnit("mechanized", "Мех. пехота", "MECH", 2, 30, 52, 18, 6),
+      new LineUnit("medium_tank", "Средние танки", "MT", 2, 18, 30, 26, 24),
+      new LineUnit("aa_line", "Линейное ПВО", "AA", 1, 10, 20, 3, 12),
+      new LineUnit("at_line", "Линейное ПТО", "AT", 1, 10, 20, 2, 20)
   );
 
-  private static final Map<String, SupportUnit> SUPPORT_UNITS = Map.of(
-      "eng", new SupportUnit(2, 2, 0),
-      "recon", new SupportUnit(1, 1, 0),
-      "sup_art", new SupportUnit(0, 12, 1),
-      "log", new SupportUnit(0, 0, 0),
-      "signal", new SupportUnit(0, 0, 0),
-      "maintenance", new SupportUnit(0, 0, 0),
-      "aa", new SupportUnit(0, 4, 8)
+  private static final List<SupportUnit> SUPPORT_UNITS = List.of(
+      new SupportUnit("eng", "Инженеры", "ENG", 2, 2, 0),
+      new SupportUnit("recon", "Разведка", "REC", 1, 1, 0),
+      new SupportUnit("sup_art", "Поддержка арт.", "S-ART", 0, 12, 1),
+      new SupportUnit("log", "Логистика", "LOG", 0, 0, 0),
+      new SupportUnit("signal", "Связь", "SIG", 0, 0, 0),
+      new SupportUnit("maintenance", "Ремрота", "MAIN", 0, 0, 0),
+      new SupportUnit("aa", "Поддержка ПВО", "S-AA", 0, 4, 8)
   );
+
+  private static final Map<String, LineUnit> LINE_UNITS_BY_ID = LINE_UNITS.stream()
+      .collect(Collectors.toUnmodifiableMap(LineUnit::id, Function.identity()));
+
+  private static final Map<String, SupportUnit> SUPPORT_UNITS_BY_ID = SUPPORT_UNITS.stream()
+      .collect(Collectors.toUnmodifiableMap(SupportUnit::id, Function.identity()));
 
   private final DivisionTemplateRepository divisionTemplateRepository;
 
@@ -45,6 +53,17 @@ public class DivisionTemplateService {
         .stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  public DivisionUnitCatalogResponse unitCatalog() {
+    return new DivisionUnitCatalogResponse(
+        LINE_UNITS.stream().map(LineUnit::toResponse).toList(),
+        SUPPORT_UNITS.stream().map(SupportUnit::toResponse).toList()
+    );
+  }
+
+  public DivisionStats calculateStats(DivisionTemplateRequest request) {
+    return calculate(request.lineSlots(), request.supportSlots());
   }
 
   @Transactional
@@ -88,7 +107,7 @@ public class DivisionTemplateService {
       if (unitId == null || unitId.isBlank()) {
         continue;
       }
-      LineUnit unit = LINE_UNITS.get(unitId);
+      LineUnit unit = LINE_UNITS_BY_ID.get(unitId);
       if (unit == null) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown line unit: " + unitId);
       }
@@ -106,7 +125,7 @@ public class DivisionTemplateService {
       if (unitId == null || unitId.isBlank()) {
         continue;
       }
-      SupportUnit unit = SUPPORT_UNITS.get(unitId);
+      SupportUnit unit = SUPPORT_UNITS_BY_ID.get(unitId);
       if (unit == null) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown support unit: " + unitId);
       }
@@ -146,9 +165,17 @@ public class DivisionTemplateService {
         .toList();
   }
 
-  private record LineUnit(int width, int hp, int org, int soft, int hard) {
+  private record LineUnit(String id, String name, String icon, int width, int hp, int org, int soft, int hard) {
+
+    private DivisionUnitResponse toResponse() {
+      return new DivisionUnitResponse(id, name, icon, width, hp, org, soft, hard);
+    }
   }
 
-  private record SupportUnit(int org, int soft, int hard) {
+  private record SupportUnit(String id, String name, String icon, int org, int soft, int hard) {
+
+    private DivisionUnitResponse toResponse() {
+      return new DivisionUnitResponse(id, name, icon, 0, 0, org, soft, hard);
+    }
   }
 }
