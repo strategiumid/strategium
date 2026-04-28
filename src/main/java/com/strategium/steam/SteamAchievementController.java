@@ -32,7 +32,7 @@ public class SteamAchievementController {
 
   @GetMapping("/achievements")
   public SteamAchievementsSummaryResponse achievements(@RequestParam(required = false) String game) {
-    if (game != null && !game.isBlank() && ParadoxSteamGame.findBySlug(game).isEmpty()) {
+    if (game != null && !game.isBlank() && SupportedSteamGame.findBySlug(game).isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown Steam game slug");
     }
 

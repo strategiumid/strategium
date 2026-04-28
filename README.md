@@ -139,8 +139,8 @@ docs(readme): описать локальный запуск
 
 - `GET /api/news` — список новостей Strategium/Paradox. Backend автоматически подтягивает официальные новости Paradox Interactive и использует локальные seed-новости как fallback.
 - `GET /api/feed/vk/strategium` — backend-прокси VK-ленты с текстом постов, вложениями, метриками и fallback-ответом.
-- `GET /api/steam/games` — публичный каталог поддерживаемых игр Paradox Interactive в Steam.
-- `GET /api/steam/achievements` — достижения текущего Steam-пользователя только по поддерживаемым играм Paradox, отсортированные по доступности и прогрессу.
+- `GET /api/steam/games` — публичный каталог поддерживаемых игр в Steam: Paradox Interactive и дополнительные игры сообщества.
+- `GET /api/steam/achievements` — достижения текущего Steam-пользователя только по поддерживаемым играм, отсортированные по доступности и прогрессу.
 - `GET /api/steam/achievements?game=hearts-of-iron-iv` — достижения текущего пользователя по одной игре.
 - `GET /api/me` — текущий пользователь сессии или гость.
 - `POST /api/auth/dev-login` — локальный dev-вход, тело: `{ "displayName": "Tester" }`.

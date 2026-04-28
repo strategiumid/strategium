@@ -42,15 +42,15 @@ public class SteamAchievementService {
   }
 
   public List<SteamGameResponse> supportedGames() {
-    return ParadoxSteamGame.SUPPORTED_GAMES.stream()
+    return SupportedSteamGame.SUPPORTED_GAMES.stream()
         .map(SteamGameResponse::from)
         .toList();
   }
 
   public SteamAchievementsSummaryResponse achievements(String steamId, String gameSlug) {
-    List<ParadoxSteamGame> games = gameSlug == null || gameSlug.isBlank()
-        ? ParadoxSteamGame.SUPPORTED_GAMES
-        : ParadoxSteamGame.findBySlug(gameSlug).map(List::of).orElse(List.of());
+    List<SupportedSteamGame> games = gameSlug == null || gameSlug.isBlank()
+        ? SupportedSteamGame.SUPPORTED_GAMES
+        : SupportedSteamGame.findBySlug(gameSlug).map(List::of).orElse(List.of());
 
     List<SteamGameAchievementsResponse> results = games.stream()
         .map(game -> achievementsForGame(steamId, game))
@@ -63,7 +63,7 @@ public class SteamAchievementService {
     return new SteamAchievementsSummaryResponse(steamId, results);
   }
 
-  private SteamGameAchievementsResponse achievementsForGame(String steamId, ParadoxSteamGame game) {
+  private SteamGameAchievementsResponse achievementsForGame(String steamId, SupportedSteamGame game) {
     if (apiKey.isBlank()) {
       return unavailable(game, "Не задан STEAM_WEB_API_KEY.");
     }
@@ -179,7 +179,7 @@ public class SteamAchievementService {
         + "&l=" + enc(language);
   }
 
-  private static SteamGameAchievementsResponse unavailable(ParadoxSteamGame game, String message) {
+  private static SteamGameAchievementsResponse unavailable(SupportedSteamGame game, String message) {
     return new SteamGameAchievementsResponse(
         game.appId(),
         game.slug(),

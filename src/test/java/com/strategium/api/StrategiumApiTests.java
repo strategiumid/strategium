@@ -88,7 +88,8 @@ class StrategiumApiTests {
     mockMvc.perform(get("/api/steam/games"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].slug").value("hearts-of-iron-iv"))
-        .andExpect(jsonPath("$[1].slug").value("crusader-kings-iii"));
+        .andExpect(jsonPath("$[1].slug").value("crusader-kings-iii"))
+        .andExpect(jsonPath("$[9].slug").value("everlasting-summer"));
   }
 
   @Test

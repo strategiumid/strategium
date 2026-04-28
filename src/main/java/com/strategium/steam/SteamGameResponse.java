@@ -7,7 +7,7 @@ public record SteamGameResponse(
     String series
 ) {
 
-  public static SteamGameResponse from(ParadoxSteamGame game) {
+  public static SteamGameResponse from(SupportedSteamGame game) {
     return new SteamGameResponse(game.appId(), game.slug(), game.title(), game.series());
   }
 }

@@ -386,7 +386,7 @@ async function loadSteamAchievements() {
     selectedSteamGameSlug = games[0]?.slug || null;
     renderSteamGames(games);
     if (games[0]) renderSteamAchievements(games[0]);
-    setAchievementsStatus(games.length ? "" : "Нет настроенных игр Paradox.");
+    setAchievementsStatus(games.length ? "" : "Нет настроенных Steam-игр.");
   } catch {
     steamAchievementSummary = null;
     selectedSteamGameSlug = null;
