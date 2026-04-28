@@ -103,7 +103,21 @@ function setupSearch() {
 function setupSectionsMenu() {
   const toggle = document.getElementById("sections-toggle");
   const list = document.getElementById("sections-list");
-  toggle.addEventListener("click", () => list.classList.toggle("hidden"));
+  toggle.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    list.classList.toggle("hidden");
+  });
+  list.addEventListener("click", (event) => {
+    if (event.target.closest("a")) {
+      list.classList.add("hidden");
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".sections-menu")) {
+      list.classList.add("hidden");
+    }
+  });
 }
 
 function renderVkFeed(posts) {
@@ -359,7 +373,9 @@ function setupSettingsModal() {
     renderSettings();
   };
   const closeModal = () => modal.classList.add("hidden");
-  document.getElementById("open-settings-modal").addEventListener("click", openModal);
+  document.querySelectorAll("[data-open-settings]").forEach((button) => {
+    button.addEventListener("click", openModal);
+  });
   document.getElementById("settings-modal-close").addEventListener("click", closeModal);
   document.getElementById("settings-modal-close-bg").addEventListener("click", closeModal);
   document.getElementById("vk-link").addEventListener("click", () => {

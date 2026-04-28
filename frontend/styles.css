@@ -50,6 +50,7 @@ body::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  z-index: 80;
 }
 
 .top-nav,
@@ -118,13 +119,15 @@ body::before {
   background: #0d121a;
   display: grid;
   min-width: 140px;
-  z-index: 40;
+  z-index: 120;
+  pointer-events: auto;
 }
 
 .sections-list a {
   font-size: 0.7rem;
   padding: 6px 8px;
   border-bottom: 1px solid #202a38;
+  cursor: pointer;
 }
 
 .sections-list a:hover { background: #121a26; }
