@@ -38,11 +38,16 @@ public class AuthService {
 
   @Transactional
   public UserAccount loginSteamUser(String steamId, HttpServletRequest request) {
-    String steamDisplayName = steamProfileService.personName(steamId).orElse("Steam " + steamId);
+    SteamProfileService.SteamProfile steamProfile = steamProfileService.profile(steamId)
+        .orElse(new SteamProfileService.SteamProfile("Steam " + steamId, ""));
+    String steamDisplayName = steamProfile.displayName();
     UserAccount user = userAccountRepository.findBySteamId(steamId)
         .orElseGet(() -> userAccountRepository.save(new UserAccount("steam:" + steamId, steamDisplayName, steamId)));
     if (shouldSyncSteamDisplayName(user, steamId, steamDisplayName)) {
       user.setDisplayName(steamDisplayName);
+    }
+    if (!steamProfile.avatarUrl().isBlank()) {
+      user.setSteamAvatarUrl(steamProfile.avatarUrl());
     }
     authenticate(user, request);
     return user;

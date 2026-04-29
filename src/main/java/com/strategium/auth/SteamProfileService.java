@@ -32,7 +32,7 @@ public class SteamProfileService {
     this.apiKey = apiKey == null ? "" : apiKey.trim();
   }
 
-  public Optional<String> personName(String steamId) {
+  public Optional<SteamProfile> profile(String steamId) {
     if (apiKey.isBlank() || steamId == null || steamId.isBlank()) {
       return Optional.empty();
     }
@@ -53,11 +53,20 @@ public class SteamProfileService {
         return Optional.empty();
       }
 
-      String personName = players.get(0).path("personaname").asText("");
-      return personName == null || personName.isBlank() ? Optional.empty() : Optional.of(personName.trim());
+      JsonNode player = players.get(0);
+      String personName = player.path("personaname").asText("");
+      if (personName == null || personName.isBlank()) {
+        return Optional.empty();
+      }
+      String avatarUrl = player.path("avatarfull").asText(player.path("avatarmedium").asText(""));
+      return Optional.of(new SteamProfile(personName.trim(), avatarUrl == null ? "" : avatarUrl.trim()));
     } catch (Exception ignored) {
       return Optional.empty();
     }
+  }
+
+  public Optional<String> personName(String steamId) {
+    return profile(steamId).map(SteamProfile::displayName);
   }
 
   private String profileUrl(String steamId) {
@@ -67,5 +76,8 @@ public class SteamProfileService {
 
   private static String enc(String value) {
     return URLEncoder.encode(value, StandardCharsets.UTF_8);
+  }
+
+  public record SteamProfile(String displayName, String avatarUrl) {
   }
 }

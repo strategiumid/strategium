@@ -8,13 +8,14 @@ public record UserResponse(
     String username,
     String displayName,
     String steamId,
+    String steamAvatarUrl,
     boolean vkLinked,
     String vkDisplayName,
     boolean authenticated
 ) {
 
   public static UserResponse guest() {
-    return new UserResponse(null, "guest", "Гость", null, false, null, false);
+    return new UserResponse(null, "guest", "Гость", null, null, false, null, false);
   }
 
   public static UserResponse from(UserAccount user) {
@@ -23,6 +24,7 @@ public record UserResponse(
         user.getUsername(),
         user.getDisplayName(),
         user.getSteamId(),
+        user.getSteamAvatarUrl(),
         user.getVkId() != null && !user.getVkId().isBlank(),
         user.getVkDisplayName(),
         true

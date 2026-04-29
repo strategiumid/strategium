@@ -27,6 +27,9 @@ public class UserAccount {
   @Column(unique = true, length = 64)
   private String steamId;
 
+  @Column(length = 600)
+  private String steamAvatarUrl;
+
   @Column(unique = true, length = 64)
   private String vkId;
 
@@ -70,6 +73,10 @@ public class UserAccount {
     return steamId;
   }
 
+  public String getSteamAvatarUrl() {
+    return steamAvatarUrl;
+  }
+
   public String getVkId() {
     return vkId;
   }
@@ -100,6 +107,10 @@ public class UserAccount {
 
   public void setRole(UserRole role) {
     this.role = role;
+  }
+
+  public void setSteamAvatarUrl(String steamAvatarUrl) {
+    this.steamAvatarUrl = steamAvatarUrl;
   }
 
   public void linkVk(String vkId, String vkDisplayName, String vkAccessToken, Instant vkTokenExpiresAt) {
