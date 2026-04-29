@@ -5,6 +5,7 @@ import com.strategium.user.UserAccount;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,5 +42,27 @@ public class SteamAchievementController {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Steam account is not linked");
     }
     return steamAchievementService.achievements(user.getSteamId(), game);
+  }
+
+  @PostMapping("/stats/refresh")
+  public SteamStatsRefreshResponse refreshStats() {
+    UserAccount user = requireSteamUser();
+    return steamAchievementService.refreshStats(user);
+  }
+
+  @GetMapping("/leaderboard")
+  public SteamLeaderboardResponse leaderboard(
+      @RequestParam(defaultValue = "pdx") String scope,
+      @RequestParam(defaultValue = "achievements") String sort
+  ) {
+    return steamAchievementService.leaderboard(scope, sort);
+  }
+
+  private UserAccount requireSteamUser() {
+    UserAccount user = currentUserService.requireUser();
+    if (user.getSteamId() == null || user.getSteamId().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Steam account is not linked");
+    }
+    return user;
   }
 }
