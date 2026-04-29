@@ -307,6 +307,10 @@ body::before {
   width: min(980px, 96vw);
 }
 
+.leaderboard-modal {
+  width: min(860px, 94vw);
+}
+
 .settings-modal {
   width: min(620px, 94vw);
 }
@@ -477,6 +481,61 @@ body::before {
   padding: 3px 6px;
   font-size: 0.62rem;
   white-space: nowrap;
+}
+
+.steam-actions,
+.leaderboard-controls {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.leaderboard-controls select {
+  border: 1px solid #344156;
+  background: #0d121a;
+  color: #d2dced;
+  font: inherit;
+  font-size: 0.68rem;
+  padding: 5px 8px;
+}
+
+.leaderboard-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #202b3c;
+  background: rgba(8, 12, 18, 0.78);
+  padding: 9px;
+}
+
+.leaderboard-row strong {
+  color: #9fb7ff;
+  font-size: 0.78rem;
+}
+
+.leaderboard-row div {
+  display: grid;
+  gap: 3px;
+}
+
+.leaderboard-row span {
+  color: #edf3fb;
+  font-size: 0.74rem;
+}
+
+.leaderboard-row small,
+.leaderboard-games {
+  color: #93a5bd;
+  font-size: 0.66rem;
 }
 
 .settings-card {
@@ -785,6 +844,8 @@ body::before {
   .achievements-layout { grid-template-columns: 1fr; }
   .steam-achievement { grid-template-columns: 42px 1fr; }
   .steam-achievement-state { grid-column: 2; justify-self: start; }
+  .leaderboard-row { grid-template-columns: 42px 1fr; }
+  .leaderboard-games { grid-column: 2; }
   .settings-card { align-items: flex-start; flex-direction: column; }
   .settings-actions { justify-content: flex-start; }
   .palette-grid { grid-template-columns: 1fr; }

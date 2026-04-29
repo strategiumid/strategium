@@ -408,8 +408,8 @@ function renderSteamGames(games) {
     title.textContent = game.title;
     const meta = document.createElement("span");
     meta.textContent = game.available
-      ? `${game.unlockedCount}/${game.totalCount} • ${game.progressPercent}%`
-      : "недоступно";
+      ? `${game.unlockedCount}/${game.totalCount} • ${game.progressPercent}% • ${formatSteamHours(game.playtimeMinutes)}`
+      : `недоступно • ${formatSteamHours(game.playtimeMinutes)}`;
     const bar = document.createElement("div");
     bar.className = "steam-progress-bar";
     const fill = document.createElement("i");
@@ -435,7 +435,7 @@ function renderSteamAchievements(game) {
   title.textContent = game.title;
   const progress = document.createElement("span");
   progress.textContent = game.available
-    ? `${game.unlockedCount}/${game.totalCount} достижений, ${game.progressPercent}%`
+    ? `${game.unlockedCount}/${game.totalCount} достижений, ${game.progressPercent}%, ${formatSteamHours(game.playtimeMinutes)}`
     : game.message || "Достижения недоступны.";
   header.append(title, progress);
   list.appendChild(header);
@@ -486,6 +486,12 @@ function renderSteamAchievements(game) {
   });
 }
 
+function formatSteamHours(minutes) {
+  const hours = Number(minutes || 0) / 60;
+  if (hours <= 0) return "0 ч";
+  return `${Math.round(hours * 10) / 10} ч`;
+}
+
 async function loadSteamAchievements() {
   if (!currentUser.authenticated || !currentUser.steamId) {
     steamAchievementSummary = null;
@@ -511,6 +517,26 @@ async function loadSteamAchievements() {
   }
 }
 
+async function refreshSteamStats() {
+  if (!currentUser.authenticated || !currentUser.steamId) {
+    setAchievementsStatus("Сначала войдите через Steam.");
+    return;
+  }
+
+  const button = document.getElementById("refresh-steam-stats");
+  button.disabled = true;
+  setAchievementsStatus("Обновляем Steam-статистику...");
+  try {
+    const result = await apiFetch("/api/steam/stats/refresh", { method: "POST" });
+    setAchievementsStatus(`Обновлено игр: ${result.refreshedGames}.`);
+    await loadSteamAchievements();
+  } catch {
+    setAchievementsStatus("Не удалось обновить статистику. Проверьте Steam privacy и STEAM_WEB_API_KEY.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function setupAchievementsModal() {
   const modal = document.getElementById("achievements-modal");
   const openModal = async (event) => {
@@ -524,6 +550,71 @@ function setupAchievementsModal() {
   document.getElementById("open-achievements-modal-top").addEventListener("click", openModal);
   document.getElementById("achievements-modal-close").addEventListener("click", closeModal);
   document.getElementById("achievements-modal-close-bg").addEventListener("click", closeModal);
+  document.getElementById("refresh-steam-stats").addEventListener("click", refreshSteamStats);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+}
+
+function renderLeaderboard(response) {
+  const list = document.getElementById("leaderboard-list");
+  list.innerHTML = "";
+
+  if (!response.entries?.length) {
+    const empty = document.createElement("p");
+    empty.className = "steam-empty";
+    empty.textContent = "Пока нет данных. Пользователям нужно обновить Steam-статистику.";
+    list.appendChild(empty);
+    return;
+  }
+
+  response.entries.forEach((entry) => {
+    const row = document.createElement("article");
+    row.className = "leaderboard-row";
+    const rank = document.createElement("strong");
+    rank.textContent = `#${entry.rank}`;
+    const user = document.createElement("div");
+    const name = document.createElement("span");
+    name.textContent = entry.displayName;
+    const meta = document.createElement("small");
+    meta.textContent = `${entry.totalUnlocked}/${entry.totalAchievements} достижений • ${entry.progressPercent}% • ${formatSteamHours(entry.totalPlaytimeMinutes)}`;
+    user.append(name, meta);
+    const games = document.createElement("span");
+    games.className = "leaderboard-games";
+    games.textContent = `${entry.gamesCount} игр`;
+    row.append(rank, user, games);
+    list.appendChild(row);
+  });
+}
+
+async function loadLeaderboard() {
+  const scope = document.getElementById("leaderboard-scope").value;
+  const sort = document.getElementById("leaderboard-sort").value;
+  const status = document.getElementById("leaderboard-status");
+  status.textContent = "Загружаем лидерборд...";
+  try {
+    const response = await apiFetch(`/api/steam/leaderboard?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
+    renderLeaderboard(response);
+    status.textContent = "";
+  } catch {
+    status.textContent = "Не удалось загрузить лидерборд.";
+  }
+}
+
+function setupLeaderboardModal() {
+  const modal = document.getElementById("leaderboard-modal");
+  const openModal = async (event) => {
+    event.preventDefault();
+    modal.classList.remove("hidden");
+    await loadLeaderboard();
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  document.getElementById("open-leaderboard-modal").addEventListener("click", openModal);
+  document.getElementById("open-leaderboard-modal-top").addEventListener("click", openModal);
+  document.getElementById("leaderboard-modal-close").addEventListener("click", closeModal);
+  document.getElementById("leaderboard-modal-close-bg").addEventListener("click", closeModal);
+  document.getElementById("leaderboard-scope").addEventListener("change", loadLeaderboard);
+  document.getElementById("leaderboard-sort").addEventListener("change", loadLeaderboard);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
   });
@@ -802,6 +893,7 @@ setupAuth();
 setupFeedModal();
 setupSettingsModal();
 setupAchievementsModal();
+setupLeaderboardModal();
 renderPalette();
 renderDivisionGrid();
 renderDivisionStats();

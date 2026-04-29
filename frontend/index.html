@@ -13,6 +13,7 @@
       <a href="#" id="open-feed-modal-top">Лента</a>
       <a href="#" id="open-tools-modal">Инструменты</a>
       <a href="#" id="open-achievements-modal-top">Достижения</a>
+      <a href="#" id="open-leaderboard-modal-top">Лидерборд</a>
       <a href="#" data-open-settings>Настройки</a>
       <a href="#">Поддержка</a>
     </nav>
@@ -22,6 +23,7 @@
         <div id="sections-list" class="sections-list hidden">
           <a href="#" id="open-feed-modal">Лента</a>
           <a href="#" id="open-achievements-modal">Достижения Steam</a>
+          <a href="#" id="open-leaderboard-modal">Лидерборд</a>
           <a href="#" data-open-settings>Настройки</a>
           <a href="#">Сообщения</a>
           <a href="#">Гайды</a>
@@ -101,11 +103,37 @@
         <button id="achievements-modal-close" class="modal-close" aria-label="Закрыть">×</button>
       </header>
       <div class="modal-subtitle">Показываются только игры из поддерживаемого каталога StrategiumID.</div>
+      <div class="steam-actions">
+        <button id="refresh-steam-stats" class="sections-btn">Обновить Steam-статистику</button>
+      </div>
       <div id="achievements-status" class="template-status"></div>
       <div class="achievements-layout">
         <aside id="steam-games-list" class="steam-games-list"></aside>
         <section id="steam-achievements-list" class="steam-achievements-list"></section>
       </div>
+    </section>
+  </div>
+
+  <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="leaderboard-modal-title">
+    <div class="modal-backdrop" id="leaderboard-modal-close-bg"></div>
+    <section class="modal-content leaderboard-modal">
+      <header class="modal-header">
+        <h2 id="leaderboard-modal-title">Лидерборд Steam</h2>
+        <button id="leaderboard-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Рейтинг строится по пользователям сайта, которые обновили Steam-статистику.</div>
+      <div class="leaderboard-controls">
+        <select id="leaderboard-scope">
+          <option value="pdx">Только PDX</option>
+          <option value="all">Все поддерживаемые</option>
+        </select>
+        <select id="leaderboard-sort">
+          <option value="achievements">По достижениям</option>
+          <option value="hours">По часам</option>
+        </select>
+      </div>
+      <div id="leaderboard-status" class="template-status"></div>
+      <div id="leaderboard-list" class="leaderboard-list"></div>
     </section>
   </div>
 
