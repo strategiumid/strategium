@@ -20,9 +20,9 @@ python -m http.server 5173
 
 На Amvera frontend будет отдаваться Spring Boot приложением из того же контейнера, поэтому API вызывается с текущего домена автоматически.
 
-## Steam-достижения
+## Steam-достижения и лидерборд
 
-Модалка «Достижения» использует backend endpoints `/api/steam/games` и `/api/steam/achievements`. Для реальных данных backend должен быть запущен с `STEAM_WEB_API_KEY`, а пользователь должен войти через Steam. В каталоге отображаются только поддерживаемые игры, включая Paradox Interactive и «Бесконечное лето».
+Модалка «Достижения» использует backend endpoints `/api/steam/games`, `/api/steam/achievements` и `/api/steam/stats/refresh`. Для реальных данных backend должен быть запущен с `STEAM_WEB_API_KEY`, а пользователь должен войти через Steam. В каталоге отображаются только поддерживаемые игры, включая Paradox Interactive и «Бесконечное лето». Модалка «Лидерборд» читает публичный endpoint `/api/steam/leaderboard`.
 
 ## VK-привязка
 

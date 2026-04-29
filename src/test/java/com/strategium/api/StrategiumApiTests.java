@@ -102,6 +102,26 @@ class StrategiumApiTests {
   }
 
   @Test
+  void steamLeaderboardIsPublic() throws Exception {
+    mockMvc.perform(get("/api/steam/leaderboard")
+            .param("scope", "pdx")
+            .param("sort", "achievements"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.scope").value("pdx"))
+        .andExpect(jsonPath("$.sort").value("achievements"))
+        .andExpect(jsonPath("$.entries").isArray());
+  }
+
+  @Test
+  void steamStatsRefreshRequiresLinkedSteamAccount() throws Exception {
+    HttpSession session = login("Tester");
+
+    mockMvc.perform(post("/api/steam/stats/refresh")
+            .session((org.springframework.mock.web.MockHttpSession) session))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void currentUserResponseIncludesVkLinkState() throws Exception {
     HttpSession session = login("Tester");
 
