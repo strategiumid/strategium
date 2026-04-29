@@ -1,5 +1,7 @@
 package com.strategium.auth;
 
+import com.strategium.steam.SteamAchievementService;
+import com.strategium.user.UserAccount;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ public class AuthController {
   private final AuthService authService;
   private final SteamOpenIdService steamOpenIdService;
   private final VkOAuthService vkOAuthService;
+  private final SteamAchievementService steamAchievementService;
   private final String frontendUrl;
 
   public AuthController(
@@ -33,12 +36,14 @@ public class AuthController {
       AuthService authService,
       SteamOpenIdService steamOpenIdService,
       VkOAuthService vkOAuthService,
+      SteamAchievementService steamAchievementService,
       @Value("${strategium.frontend-url}") String frontendUrl
   ) {
     this.currentUserService = currentUserService;
     this.authService = authService;
     this.steamOpenIdService = steamOpenIdService;
     this.vkOAuthService = vkOAuthService;
+    this.steamAchievementService = steamAchievementService;
     this.frontendUrl = frontendUrl;
   }
 
@@ -74,7 +79,12 @@ public class AuthController {
   public void steamCallback(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) throws IOException {
     String steamId = steamOpenIdService.validateAndExtractSteamId(request.getParameterMap())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Steam authentication failed"));
-    authService.loginSteamUser(steamId, request);
+    UserAccount user = authService.loginSteamUser(steamId, request);
+    try {
+      steamAchievementService.refreshStats(user);
+    } catch (Exception ignored) {
+      // Steam privacy/API issues must not block authentication.
+    }
     response.sendRedirect(frontendUrl);
   }
 
