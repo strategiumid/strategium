@@ -10,6 +10,7 @@
   <header class="topbar container">
     <nav class="top-nav">
       <a href="#">Главная</a>
+      <a href="#" data-open-profile>Профиль</a>
       <a href="#" id="open-feed-modal-top">Лента</a>
       <a href="#" id="open-tools-modal">Инструменты</a>
       <a href="#" id="open-achievements-modal-top">Достижения</a>
@@ -21,6 +22,7 @@
       <div class="sections-menu">
         <button id="sections-toggle" class="sections-btn">Разделы</button>
         <div id="sections-list" class="sections-list hidden">
+          <a href="#" data-open-profile>Профиль</a>
           <a href="#" id="open-feed-modal">Лента</a>
           <a href="#" id="open-achievements-modal">Достижения Steam</a>
           <a href="#" id="open-leaderboard-modal">Лидерборд</a>
@@ -111,6 +113,26 @@
         <aside id="steam-games-list" class="steam-games-list"></aside>
         <section id="steam-achievements-list" class="steam-achievements-list"></section>
       </div>
+    </section>
+  </div>
+
+  <div id="profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-backdrop" id="profile-modal-close-bg"></div>
+    <section class="modal-content profile-modal">
+      <header class="modal-header">
+        <h2 id="profile-modal-title">Профиль</h2>
+        <button id="profile-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="profile-card">
+        <div id="profile-avatar" class="profile-avatar">ST</div>
+        <div>
+          <h3 id="profile-name">Гость</h3>
+          <p id="profile-steam">Steam не привязан</p>
+          <p id="profile-vk">VK не привязан</p>
+        </div>
+      </div>
+      <div id="profile-stats" class="profile-stats"></div>
+      <div id="profile-status" class="template-status"></div>
     </section>
   </div>
 

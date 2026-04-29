@@ -341,6 +341,98 @@ function setupFeedModal() {
   });
 }
 
+function renderProfileBase(user) {
+  document.getElementById("profile-name").textContent = user.displayName || "Гость";
+  document.getElementById("profile-steam").textContent = user.steamId ? `SteamID: ${user.steamId}` : "Steam не привязан";
+  document.getElementById("profile-vk").textContent = user.vkLinked
+    ? `VK: ${user.vkDisplayName || "привязан"}`
+    : "VK не привязан";
+
+  const avatar = document.getElementById("profile-avatar");
+  avatar.innerHTML = "";
+  if (user.steamAvatarUrl) {
+    const img = document.createElement("img");
+    img.src = user.steamAvatarUrl;
+    img.alt = user.displayName || "Steam avatar";
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = (user.displayName || "ST").slice(0, 2).toUpperCase();
+  }
+}
+
+function renderProfileStats(summary) {
+  const stats = document.getElementById("profile-stats");
+  stats.innerHTML = "";
+  const games = summary?.games || [];
+  const totals = games.reduce((acc, game) => {
+    acc.playtimeMinutes += Number(game.playtimeMinutes || 0);
+    acc.unlocked += Number(game.unlockedCount || 0);
+    acc.total += Number(game.totalCount || 0);
+    acc.available += game.available ? 1 : 0;
+    return acc;
+  }, { playtimeMinutes: 0, unlocked: 0, total: 0, available: 0 });
+  const progress = totals.total ? Math.round((totals.unlocked * 100) / totals.total) : 0;
+  [
+    ["Часы", formatSteamHours(totals.playtimeMinutes)],
+    ["Достижения", `${totals.unlocked}/${totals.total}`],
+    ["Прогресс", `${progress}%`],
+    ["Игр с данными", `${totals.available}/${games.length}`]
+  ].forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.className = "profile-stat";
+    const strong = document.createElement("strong");
+    strong.textContent = value;
+    const span = document.createElement("span");
+    span.textContent = label;
+    item.append(strong, span);
+    stats.appendChild(item);
+  });
+}
+
+async function loadProfile() {
+  const status = document.getElementById("profile-status");
+  const stats = document.getElementById("profile-stats");
+  await loadCurrentUser();
+  renderProfileBase(currentUser);
+  stats.innerHTML = "";
+
+  if (!currentUser.authenticated) {
+    status.textContent = "Войдите через Steam или Dev вход, чтобы увидеть профиль.";
+    return;
+  }
+  if (!currentUser.steamId) {
+    status.textContent = "Steam не привязан. Статистика игр недоступна.";
+    return;
+  }
+
+  status.textContent = "Загружаем Steam-статистику...";
+  try {
+    const summary = await apiFetch("/api/steam/achievements");
+    renderProfileStats(summary);
+    status.textContent = "";
+  } catch {
+    status.textContent = "Не удалось загрузить Steam-статистику. Проверьте приватность Steam.";
+  }
+}
+
+function setupProfileModal() {
+  const modal = document.getElementById("profile-modal");
+  const openModal = async (event) => {
+    event.preventDefault();
+    modal.classList.remove("hidden");
+    await loadProfile();
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  document.querySelectorAll("[data-open-profile]").forEach((button) => {
+    button.addEventListener("click", openModal);
+  });
+  document.getElementById("profile-modal-close").addEventListener("click", closeModal);
+  document.getElementById("profile-modal-close-bg").addEventListener("click", closeModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+}
+
 function renderSettings() {
   const status = document.getElementById("vk-link-status");
   const linkButton = document.getElementById("vk-link");
@@ -891,6 +983,7 @@ setupSearch();
 setupSectionsMenu();
 setupAuth();
 setupFeedModal();
+setupProfileModal();
 setupSettingsModal();
 setupAchievementsModal();
 setupLeaderboardModal();

@@ -1,5 +1,6 @@
 package com.strategium.api;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -128,6 +129,7 @@ class StrategiumApiTests {
     mockMvc.perform(get("/api/me")
             .session((org.springframework.mock.web.MockHttpSession) session))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.steamAvatarUrl").value(nullValue()))
         .andExpect(jsonPath("$.vkLinked").value(false));
   }
 
