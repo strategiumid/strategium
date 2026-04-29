@@ -37,26 +37,26 @@ public class VkOAuthService {
       @Value("${strategium.vk.client-id:}") String clientId,
       @Value("${strategium.vk.client-secret:}") String clientSecret,
       @Value("${strategium.vk.redirect-uri:}") String configuredRedirectUri,
-      @Value("${strategium.vk.oauth-scope:wall,offline}") String scope
+      @Value("${strategium.vk.oauth-scope:}") String scope
   ) {
     this.objectMapper = objectMapper;
     this.clientId = clientId == null ? "" : clientId.trim();
     this.clientSecret = clientSecret == null ? "" : clientSecret.trim();
     this.configuredRedirectUri = configuredRedirectUri == null ? "" : configuredRedirectUri.trim();
-    this.scope = scope == null || scope.isBlank() ? "wall,offline" : scope.trim();
+    this.scope = scope == null ? "" : scope.trim();
   }
 
   public String authorizationUrl(String requestBaseUrl, String state) {
     ensureConfigured();
     String redirectUri = redirectUri(requestBaseUrl);
-    return VK_AUTHORIZE_URL
+    String url = VK_AUTHORIZE_URL
         + "?client_id=" + enc(clientId)
         + "&redirect_uri=" + enc(redirectUri)
         + "&display=page"
-        + "&scope=" + enc(scope)
         + "&response_type=code"
         + "&state=" + enc(state)
         + "&v=" + enc(API_VERSION);
+    return scope.isBlank() ? url : url + "&scope=" + enc(scope);
   }
 
   public VkOAuthAccount exchangeCode(String code, String requestBaseUrl) {

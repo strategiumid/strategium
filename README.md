@@ -92,7 +92,7 @@ python -m http.server 5173
 - `VK_CLIENT_ID` — ID VK OAuth-приложения для привязки VK-аккаунта пользователя.
 - `VK_CLIENT_SECRET` — защищённый ключ VK OAuth-приложения.
 - `VK_REDIRECT_URI` — callback URL VK OAuth, например `https://your-domain.amvera.io/api/auth/vk/callback`. Если пусто, backend соберёт URL из текущего запроса.
-- `VK_OAUTH_SCOPE` — права user token для действий с постами, по умолчанию `wall,offline`.
+- `VK_OAUTH_SCOPE` — необязательные права user token. По умолчанию пусто, чтобы VK OAuth не падал с `invalid_scope`; `wall` часто недоступен для web-приложений.
 - `VK_GROUP_DOMAIN` — короткое имя VK-группы для ленты, по умолчанию `strategium`.
 - `VK_POST_COUNT` — количество постов VK, по умолчанию `8`, максимум `25`.
 - `VK_SOURCE_NAME` — имя источника в карточках VK, по умолчанию `Strategium`.

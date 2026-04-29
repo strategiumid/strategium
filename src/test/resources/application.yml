@@ -22,7 +22,7 @@ strategium:
     client-id:
     client-secret:
     redirect-uri:
-    oauth-scope: wall,offline
+    oauth-scope:
   steam:
     web-api-key:
     language: russian
