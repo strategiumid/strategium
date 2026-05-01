@@ -7,31 +7,32 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <aside class="side-nav" aria-label="Основная навигация">
+    <button class="side-nav-item active" type="button" title="Главная">⌂</button>
+    <button class="side-nav-item" type="button" data-open-profile title="Профиль">◉</button>
+    <button class="side-nav-item" type="button" data-open-feed title="Лента">☰</button>
+    <button class="side-nav-item" type="button" data-open-tools title="Инструменты">⚒</button>
+    <button class="side-nav-item" type="button" data-open-achievements title="Достижения">★</button>
+    <button class="side-nav-item" type="button" data-open-leaderboard title="Лидерборд">♛</button>
+    <button class="side-nav-item" type="button" data-open-settings title="Настройки">⚙</button>
+  </aside>
+
   <header class="topbar container">
     <nav class="top-nav">
       <a href="#">Главная</a>
       <a href="#" data-open-profile>Профиль</a>
-      <a href="#" id="open-feed-modal-top">Лента</a>
-      <a href="#" id="open-tools-modal">Инструменты</a>
-      <a href="#" id="open-achievements-modal-top">Достижения</a>
-      <a href="#" id="open-leaderboard-modal-top">Лидерборд</a>
+      <a href="#" data-open-feed>Лента</a>
+      <a href="#" data-open-tools>Инструменты</a>
+      <a href="#" data-open-achievements>Достижения</a>
+      <a href="#" data-open-leaderboard>Лидерборд</a>
       <a href="#" data-open-settings>Настройки</a>
       <a href="#">Поддержка</a>
     </nav>
     <div class="top-right">
-      <div class="sections-menu">
-        <button id="sections-toggle" class="sections-btn">Разделы</button>
-        <div id="sections-list" class="sections-list hidden">
-          <a href="#" data-open-profile>Профиль</a>
-          <a href="#" id="open-feed-modal">Лента</a>
-          <a href="#" id="open-achievements-modal">Достижения Steam</a>
-          <a href="#" id="open-leaderboard-modal">Лидерборд</a>
-          <a href="#" data-open-settings>Настройки</a>
-          <a href="#">Сообщения</a>
-          <a href="#">Гайды</a>
-          <a href="#">Кланы</a>
-          <a href="#">Турниры</a>
-        </div>
+      <div class="quick-actions" aria-label="Быстрые действия">
+        <button id="quick-notify" class="quick-icon-btn" type="button" title="Уведомления">🔔</button>
+        <button id="quick-messages" class="quick-icon-btn" type="button" title="Сообщения">✉</button>
+        <button id="quick-search" class="quick-icon-btn" type="button" title="Поиск">⌕</button>
       </div>
       <button id="steam-login" class="auth-btn steam-btn">
         <span class="steam-icon" aria-hidden="true">
@@ -51,7 +52,7 @@
   </header>
 
   <main class="page">
-    <section class="hero">
+    <section class="hero stagger-item">
       <div class="hero-logo">StrategiumID</div>
       <div class="hero-title">
         <p>Добро пожаловать, Командир</p>
@@ -62,7 +63,7 @@
       </div>
     </section>
 
-    <section class="news-block container">
+    <section class="news-block container stagger-item">
       <div class="news-head">
         <h2>Новости сообщества</h2>
         <small>Paradox Games Feed</small>
@@ -236,6 +237,14 @@
     </section>
   </div>
 
+  <nav class="mobile-bottom-nav" aria-label="Навигация">
+    <button type="button" class="mobile-nav-item active" title="Главная">⌂</button>
+    <button type="button" class="mobile-nav-item" data-open-feed title="Лента">☰</button>
+    <button type="button" class="mobile-nav-item" data-open-tools title="Инструменты">⚒</button>
+    <button type="button" class="mobile-nav-item" data-open-achievements title="Достижения">★</button>
+    <button type="button" class="mobile-nav-item" data-open-leaderboard title="Лидерборд">♛</button>
+    <button type="button" class="mobile-nav-item" data-open-profile title="Профиль">◉</button>
+  </nav>
   <script src="./app.js"></script>
 </body>
 </html>

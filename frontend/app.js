@@ -101,23 +101,52 @@ function setupSearch() {
   });
 }
 
-function setupSectionsMenu() {
-  const toggle = document.getElementById("sections-toggle");
-  const list = document.getElementById("sections-list");
-  toggle.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    list.classList.toggle("hidden");
+function setupQuickActions() {
+  const searchBtn = document.getElementById("quick-search");
+  const notifyBtn = document.getElementById("quick-notify");
+  const messagesBtn = document.getElementById("quick-messages");
+  const searchInput = document.getElementById("global-search");
+  searchBtn?.addEventListener("click", () => {
+    document.querySelector(".hero")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    searchInput?.focus();
   });
-  list.addEventListener("click", (event) => {
-    if (event.target.closest("a")) {
-      list.classList.add("hidden");
-    }
+  notifyBtn?.addEventListener("click", () => window.alert("Уведомления скоро появятся."));
+  messagesBtn?.addEventListener("click", () => window.alert("Личные сообщения скоро появятся."));
+}
+
+function animateNumber(node, target) {
+  const value = Number(target || 0);
+  if (!Number.isFinite(value)) return;
+  const duration = 550;
+  const start = performance.now();
+  const step = (now) => {
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    node.textContent = `${Math.round(value * eased)}`;
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function runAnimatedCounters(scope) {
+  scope.querySelectorAll("[data-counter]").forEach((node) => {
+    animateNumber(node, Number(node.dataset.counter || 0));
   });
-  document.addEventListener("click", (event) => {
-    if (!event.target.closest(".sections-menu")) {
-      list.classList.add("hidden");
-    }
+}
+
+function renderSkeleton(container, rows = 4, tall = false) {
+  container.innerHTML = "";
+  Array.from({ length: rows }).forEach(() => {
+    const row = document.createElement("div");
+    row.className = `skeleton-row ${tall ? "tall" : ""}`;
+    container.appendChild(row);
+  });
+}
+
+function setupStaggeredReveal() {
+  document.querySelectorAll(".stagger-item").forEach((item, index) => {
+    item.style.animationDelay = `${120 * index}ms`;
+    item.classList.add("stagger-show");
   });
 }
 
@@ -322,8 +351,6 @@ async function loadVkStrategiumFeed() {
 }
 
 function setupFeedModal() {
-  const openBtn = document.getElementById("open-feed-modal");
-  const openTopBtn = document.getElementById("open-feed-modal-top");
   const modal = document.getElementById("feed-modal");
   const closeBtn = document.getElementById("feed-modal-close");
   const closeBg = document.getElementById("feed-modal-close-bg");
@@ -333,8 +360,7 @@ function setupFeedModal() {
     await loadVkStrategiumFeed();
   };
   const closeModal = () => modal.classList.add("hidden");
-  openBtn.addEventListener("click", openModal);
-  openTopBtn.addEventListener("click", openModal);
+  document.querySelectorAll("[data-open-feed]").forEach((btn) => btn.addEventListener("click", openModal));
   closeBtn.addEventListener("click", closeModal);
   closeBg.addEventListener("click", closeModal);
   document.addEventListener("keydown", (event) => {
@@ -382,12 +408,17 @@ function renderProfileStats(summary) {
     const item = document.createElement("div");
     item.className = "profile-stat";
     const strong = document.createElement("strong");
-    strong.textContent = value;
+    if (label === "Прогресс") {
+      strong.innerHTML = `<span data-counter="${progress}">0</span>%`;
+    } else {
+      strong.textContent = value;
+    }
     const span = document.createElement("span");
     span.textContent = label;
     item.append(strong, span);
     stats.appendChild(item);
   });
+  runAnimatedCounters(stats);
 }
 
 async function loadProfile() {
@@ -596,6 +627,8 @@ async function loadSteamAchievements() {
   }
 
   setAchievementsStatus("Загружаем достижения из Steam...");
+  renderSkeleton(document.getElementById("steam-games-list"), 5);
+  renderSkeleton(document.getElementById("steam-achievements-list"), 6, true);
   try {
     steamAchievementSummary = await apiFetch("/api/steam/achievements");
     const games = steamAchievementSummary.games || [];
@@ -639,8 +672,7 @@ function setupAchievementsModal() {
     await loadSteamAchievements();
   };
   const closeModal = () => modal.classList.add("hidden");
-  document.getElementById("open-achievements-modal").addEventListener("click", openModal);
-  document.getElementById("open-achievements-modal-top").addEventListener("click", openModal);
+  document.querySelectorAll("[data-open-achievements]").forEach((btn) => btn.addEventListener("click", openModal));
   document.getElementById("achievements-modal-close").addEventListener("click", closeModal);
   document.getElementById("achievements-modal-close-bg").addEventListener("click", closeModal);
   document.getElementById("refresh-steam-stats").addEventListener("click", refreshSteamStats);
@@ -666,18 +698,18 @@ function renderLeaderboard(response) {
     const row = document.createElement("article");
     row.className = "leaderboard-row";
     const rank = document.createElement("strong");
-    rank.textContent = `#${entry.rank}`;
+    rank.innerHTML = `#<span data-counter="${entry.rank}">0</span>`;
     const user = document.createElement("div");
     const name = document.createElement("span");
     name.textContent = entry.displayName;
     const meta = document.createElement("small");
-    meta.textContent = `${entry.totalUnlocked}/${entry.totalAchievements} достижений • ${entry.progressPercent}% • ${formatSteamHours(entry.totalPlaytimeMinutes)}`;
+    meta.innerHTML = `<span data-counter="${entry.totalUnlocked}">0</span>/<span data-counter="${entry.totalAchievements}">0</span> достижений • <span data-counter="${entry.progressPercent}">0</span>% • ${formatSteamHours(entry.totalPlaytimeMinutes)}`;
     user.append(name, meta);
     const side = document.createElement("div");
     side.className = "leaderboard-row-side";
     const games = document.createElement("span");
     games.className = "leaderboard-games";
-    games.textContent = `${entry.gamesCount} игр`;
+    games.innerHTML = `<span data-counter="${entry.gamesCount}">0</span> игр`;
     const compareBtn = document.createElement("button");
     compareBtn.type = "button";
     compareBtn.className = "sections-btn";
@@ -687,6 +719,7 @@ function renderLeaderboard(response) {
     row.append(rank, user, side);
     list.appendChild(row);
   });
+  runAnimatedCounters(list);
 }
 
 function normalizeGameKey(game) {
@@ -777,6 +810,7 @@ async function loadLeaderboard() {
   const sort = document.getElementById("leaderboard-sort").value;
   const status = document.getElementById("leaderboard-status");
   status.textContent = "Загружаем лидерборд...";
+  renderSkeleton(document.getElementById("leaderboard-list"), 6, true);
   try {
     const response = await apiFetch(`/api/steam/leaderboard?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
     renderLeaderboard(response);
@@ -794,8 +828,7 @@ function setupLeaderboardModal() {
     await loadLeaderboard();
   };
   const closeModal = () => modal.classList.add("hidden");
-  document.getElementById("open-leaderboard-modal").addEventListener("click", openModal);
-  document.getElementById("open-leaderboard-modal-top").addEventListener("click", openModal);
+  document.querySelectorAll("[data-open-leaderboard]").forEach((btn) => btn.addEventListener("click", openModal));
   document.getElementById("leaderboard-modal-close").addEventListener("click", closeModal);
   document.getElementById("leaderboard-modal-close-bg").addEventListener("click", closeModal);
   document.getElementById("leaderboard-scope").addEventListener("change", loadLeaderboard);
@@ -1419,7 +1452,7 @@ function setupToolsModal() {
     await loadTemplates();
   };
   const closeModal = () => modal.classList.add("hidden");
-  document.getElementById("open-tools-modal").addEventListener("click", openModal);
+  document.querySelectorAll("[data-open-tools]").forEach((btn) => btn.addEventListener("click", openModal));
   document.getElementById("tools-modal-close").addEventListener("click", closeModal);
   document.getElementById("tools-modal-close-bg").addEventListener("click", closeModal);
   document.getElementById("clear-division").addEventListener("click", () => {
@@ -1495,7 +1528,8 @@ function setupAuth() {
 
 renderNews(fallbackNews);
 setupSearch();
-setupSectionsMenu();
+setupQuickActions();
+setupStaggeredReveal();
 setupAuth();
 setupFeedModal();
 setupProfileModal();
