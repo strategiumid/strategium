@@ -815,23 +815,23 @@ function setupLeaderboardModal() {
 }
 
 const lineBattalionDefs = [
-  { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, icon: "INF" },
-  { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, icon: "ART" },
-  { id: "motorized", name: "Мотопехота", width: 2, hp: 24, org: 58, soft: 14, hard: 2, icon: "MOT" },
-  { id: "mechanized", name: "Мех. пехота", width: 2, hp: 30, org: 52, soft: 18, hard: 6, icon: "MECH" },
-  { id: "medium_tank", name: "Средние танки", width: 2, hp: 18, org: 30, soft: 26, hard: 24, icon: "MT" },
-  { id: "aa_line", name: "Линейное ПВО", width: 1, hp: 10, org: 20, soft: 3, hard: 12, icon: "AA" },
-  { id: "at_line", name: "Линейное ПТО", width: 1, hp: 10, org: 20, soft: 2, hard: 20, icon: "AT" }
+  { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 } },
+  { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 } },
+  { id: "motorized", name: "Мотопехота", width: 2, hp: 24, org: 58, soft: 14, hard: 2, icon: "truck", role: "Быстрая пехота для мобильных операций.", equipment: { infantry: 800 } },
+  { id: "mechanized", name: "Мех. пехота", width: 2, hp: 30, org: 52, soft: 18, hard: 6, icon: "mech", role: "Более крепкая мобильная линия.", equipment: { infantry: 700 } },
+  { id: "medium_tank", name: "Средние танки", width: 2, hp: 18, org: 30, soft: 26, hard: 24, icon: "tank", role: "Прорыв и бронебойность, требует пехотного ядра.", equipment: { infantry: 300 } },
+  { id: "aa_line", name: "Линейное ПВО", width: 1, hp: 10, org: 20, soft: 3, hard: 12, icon: "aa", role: "Защита от авиации и часть hard attack.", equipment: { artillery: 12 } },
+  { id: "at_line", name: "Линейное ПТО", width: 1, hp: 10, org: 20, soft: 2, hard: 20, icon: "at", role: "Контр-танковая роль на линии.", equipment: { artillery: 12 } }
 ];
 
 const supportCompanyDefs = [
-  { id: "eng", name: "Инженеры", org: 2, soft: 2, hard: 0, icon: "ENG" },
-  { id: "recon", name: "Разведка", org: 1, soft: 1, hard: 0, icon: "REC" },
-  { id: "sup_art", name: "Поддержка арт.", org: 0, soft: 12, hard: 1, icon: "S-ART" },
-  { id: "log", name: "Логистика", org: 0, soft: 0, hard: 0, icon: "LOG" },
-  { id: "signal", name: "Связь", org: 0, soft: 0, hard: 0, icon: "SIG" },
-  { id: "maintenance", name: "Ремрота", org: 0, soft: 0, hard: 0, icon: "MAIN" },
-  { id: "aa", name: "Поддержка ПВО", org: 0, soft: 4, hard: 8, icon: "S-AA" }
+  { id: "eng", name: "Инженеры", org: 2, soft: 2, hard: 0, icon: "eng", role: "Бонусы в обороне и на переправах.", equipment: { support: 30 } },
+  { id: "recon", name: "Разведка", org: 1, soft: 1, hard: 0, icon: "recon", role: "Инициатива и выбор тактики.", equipment: { support: 30 } },
+  { id: "sup_art", name: "Поддержка арт.", org: 0, soft: 12, hard: 1, icon: "art", role: "Дешевый рост soft attack.", equipment: { support: 30, artillery: 24 } },
+  { id: "log", name: "Логистика", org: 0, soft: 0, hard: 0, icon: "log", role: "Снижение расхода снабжения.", equipment: { support: 30 } },
+  { id: "signal", name: "Связь", org: 0, soft: 0, hard: 0, icon: "signal", role: "Быстрое вступление в бой и инициатива.", equipment: { support: 30 } },
+  { id: "maintenance", name: "Ремрота", org: 0, soft: 0, hard: 0, icon: "wrench", role: "Надежность и захват техники.", equipment: { support: 30 } },
+  { id: "aa", name: "Поддержка ПВО", org: 0, soft: 4, hard: 8, icon: "aa", role: "ПВО в слоте поддержки.", equipment: { support: 30, artillery: 12 } }
 ];
 
 const unitTypeById = {
@@ -855,21 +855,59 @@ const divisionState = {
   lineSlots: Array(25).fill(null),
   supportSlots: Array(5).fill(null),
   selectedLine: null,
-  selectedSupport: null
+  selectedSupport: null,
+  previewUnitId: null,
+  previewKind: null
+};
+
+const optimalWidths = new Set([20, 21, 27, 42, 45]);
+
+const aiReferenceTemplates = {
+  GER: {
+    1936: { name: "Немецкая пехотная 1936", line: ["infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry"], support: ["eng", "recon"] },
+    1939: { name: "Немецкая пехотная 1939", line: ["infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "artillery", "artillery"], support: ["eng", "recon", "sup_art"] },
+    1941: { name: "Немецкая наступательная 1941", line: ["infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "artillery", "artillery", "artillery", "artillery"], support: ["eng", "recon", "sup_art", "aa"] }
+  },
+  SOV: {
+    1936: { name: "Советская стрелковая 1936", line: ["infantry", "infantry", "infantry", "infantry", "infantry", "infantry"], support: ["eng"] },
+    1939: { name: "Советская стрелковая 1939", line: ["infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "artillery"], support: ["eng", "recon"] },
+    1941: { name: "Советская усиленная 1941", line: ["infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "artillery", "artillery"], support: ["eng", "recon", "sup_art"] }
+  }
+};
+
+const metaTemplates = {
+  "7_2": {
+    name: "7/2",
+    note: "Универсальный бюджетный шаблон ранней/средней игры.",
+    line: ["infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "infantry", "artillery", "artillery"],
+    support: ["eng", "recon", "sup_art"]
+  },
+  "14_4": {
+    name: "14/4",
+    note: "Классика для прорыва пехотой при хорошем снабжении.",
+    line: [...Array(14).fill("infantry"), ...Array(4).fill("artillery")],
+    support: ["eng", "recon", "sup_art", "signal"]
+  },
+  space_marine: {
+    name: "Space Marine",
+    note: "Пехотная масса + танковый батальон для брони и прорыва.",
+    line: [...Array(8).fill("infantry"), "medium_tank"],
+    support: ["eng", "recon", "maintenance"]
+  }
 };
 
 function renderPalette() {
   const battalionPalette = document.getElementById("battalion-palette");
   const supportPalette = document.getElementById("support-palette");
   battalionPalette.innerHTML = lineBattalionDefs.map((unit) => `
-    <button class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}">
-      ${unit.icon} • ${unit.name}
+    <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}" title="${unit.role}">
+      ${unitIconSvg(unit.icon)} ${unit.name}
       <small>W:${unit.width} ORG:${unit.org} SA:${unit.soft} HA:${unit.hard}</small>
     </button>
   `).join("");
   supportPalette.innerHTML = supportCompanyDefs.map((unit) => `
-    <button class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedSupport === unit.id ? "active" : ""}" data-pick-support="${unit.id}">
-      ${unit.icon} • ${unit.name}
+    <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedSupport === unit.id ? "active" : ""}" data-pick-support="${unit.id}" title="${unit.role}">
+      ${unitIconSvg(unit.icon)} ${unit.name}
     </button>
   `).join("");
   battalionPalette.querySelectorAll("[data-pick-line]").forEach((button) => {
@@ -877,13 +915,72 @@ function renderPalette() {
       divisionState.selectedLine = button.dataset.pickLine;
       renderPalette();
     });
+    button.addEventListener("mouseenter", () => {
+      divisionState.previewKind = "line";
+      divisionState.previewUnitId = button.dataset.pickLine;
+      renderDivisionGrid();
+      renderDivisionStats();
+    });
+    button.addEventListener("dragstart", (event) => {
+      event.dataTransfer.setData("text/plain", JSON.stringify({ source: "palette", kind: "line", unitId: button.dataset.pickLine }));
+    });
   });
   supportPalette.querySelectorAll("[data-pick-support]").forEach((button) => {
     button.addEventListener("click", () => {
       divisionState.selectedSupport = button.dataset.pickSupport;
       renderPalette();
     });
+    button.addEventListener("mouseenter", () => {
+      divisionState.previewKind = "support";
+      divisionState.previewUnitId = button.dataset.pickSupport;
+      renderDivisionGrid();
+      renderDivisionStats();
+    });
+    button.addEventListener("dragstart", (event) => {
+      event.dataTransfer.setData("text/plain", JSON.stringify({ source: "palette", kind: "support", unitId: button.dataset.pickSupport }));
+    });
   });
+  [battalionPalette, supportPalette].forEach((palette) => {
+    palette.addEventListener("mouseleave", () => {
+      divisionState.previewKind = null;
+      divisionState.previewUnitId = null;
+      renderDivisionGrid();
+      renderDivisionStats();
+    });
+  });
+}
+
+function applyUnitToSlot(slotKind, slotIndex, unitId) {
+  if (slotKind === "line") divisionState.lineSlots[slotIndex] = unitId || null;
+  if (slotKind === "support") divisionState.supportSlots[slotIndex] = unitId || null;
+  renderDivisionGrid();
+  renderDivisionStats();
+}
+
+function parseDragPayload(event) {
+  try {
+    return JSON.parse(event.dataTransfer.getData("text/plain") || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function unitIconSvg(icon) {
+  const map = {
+    inf: `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="4" r="2"></circle><path d="M5 14v-3l2-2 1 1 1-1 2 2v3"></path></svg>`,
+    art: `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="4" cy="12" r="2"></circle><circle cx="10" cy="12" r="2"></circle><path d="M2 10h8l3-3M7 10V6h3"></path></svg>`,
+    tank: `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="8" width="10" height="4"></rect><path d="M6 8V6h6M12 6l2 1"></path></svg>`,
+    mech: `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="6" width="10" height="6"></rect><path d="M5 6V4h2v2m2 0V4h2v2"></path></svg>`,
+    truck: `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="7" width="8" height="4"></rect><path d="M9 8h3l2 2v1H9z"></path><circle cx="4" cy="12" r="1.5"></circle><circle cx="11" cy="12" r="1.5"></circle></svg>`,
+    aa: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4 6h8M6 12h4"></path></svg>`,
+    at: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 12h12M5 12l3-8 3 8"></path></svg>`,
+    eng: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l4-4m0 0 2-2m-2 2 4 4m-6-9 3 3"></path></svg>`,
+    recon: `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4"></circle><path d="M10 10l3 3"></path></svg>`,
+    log: `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="4" width="12" height="8"></rect><path d="M5 7h6"></path></svg>`,
+    signal: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 6a6 6 0 0 1 8 0M2 8a8 8 0 0 1 12 0"></path></svg>`,
+    wrench: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2a3 3 0 0 0 0 4L4 11l1 1 5-5a3 3 0 0 0 4 0"></path></svg>`
+  };
+  return `<span class="slot-icon">${map[icon] || map.inf}</span>`;
 }
 
 function renderDivisionGrid() {
@@ -892,25 +989,77 @@ function renderDivisionGrid() {
   grid.innerHTML = divisionState.lineSlots.map((unitId, index) => {
     const unit = unitId ? lineBattalionDefs.find((def) => def.id === unitId) : null;
     const unitType = unit ? unitTypeById[unit.id] || "support" : "";
-    return `<button class="division-slot ${unit ? `unit-type-${unitType}` : "empty"}" data-line-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `<span>${unit.icon}</span><small>${unit.name}</small>` : "Пусто"}</button>`;
+    const previewClass = !unit && divisionState.previewKind === "line" && divisionState.previewUnitId ? "preview-target" : "";
+    return `<button draggable="${unit ? "true" : "false"}" class="division-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-line-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name}</small>` : "Пусто"}</button>`;
   }).join("");
   supportGrid.innerHTML = divisionState.supportSlots.map((unitId, index) => {
     const unit = unitId ? supportCompanyDefs.find((def) => def.id === unitId) : null;
     const unitType = unit ? unitTypeById[unit.id] || "support" : "";
-    return `<button class="support-slot ${unit ? `unit-type-${unitType}` : "empty"}" data-support-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `<span>${unit.icon}</span><small>${unit.name}</small>` : "Пусто"}</button>`;
+    const previewClass = !unit && divisionState.previewKind === "support" && divisionState.previewUnitId ? "preview-target" : "";
+    return `<button draggable="${unit ? "true" : "false"}" class="support-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-support-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name}</small>` : "Пусто"}</button>`;
   }).join("");
   grid.querySelectorAll("[data-line-slot]").forEach((button) => {
     button.addEventListener("click", () => {
-      divisionState.lineSlots[Number(button.dataset.lineSlot)] = divisionState.selectedLine || null;
-      renderDivisionGrid();
-      renderDivisionStats();
+      applyUnitToSlot("line", Number(button.dataset.lineSlot), divisionState.selectedLine || null);
+    });
+    button.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      applyUnitToSlot("line", Number(button.dataset.lineSlot), null);
+    });
+    button.addEventListener("dragstart", (event) => {
+      const slotIndex = Number(button.dataset.lineSlot);
+      const unitId = divisionState.lineSlots[slotIndex];
+      if (!unitId) return;
+      event.dataTransfer.setData("text/plain", JSON.stringify({ source: "slot", kind: "line", fromSlot: slotIndex, unitId }));
+    });
+    button.addEventListener("dragover", (event) => event.preventDefault());
+    button.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const payload = parseDragPayload(event);
+      if (payload.kind !== "line") return;
+      const target = Number(button.dataset.lineSlot);
+      if (payload.source === "slot") {
+        const from = Number(payload.fromSlot);
+        const prevTarget = divisionState.lineSlots[target];
+        divisionState.lineSlots[target] = payload.unitId;
+        divisionState.lineSlots[from] = prevTarget || null;
+        renderDivisionGrid();
+        renderDivisionStats();
+        return;
+      }
+      applyUnitToSlot("line", target, payload.unitId || null);
     });
   });
   supportGrid.querySelectorAll("[data-support-slot]").forEach((button) => {
     button.addEventListener("click", () => {
-      divisionState.supportSlots[Number(button.dataset.supportSlot)] = divisionState.selectedSupport || null;
-      renderDivisionGrid();
-      renderDivisionStats();
+      applyUnitToSlot("support", Number(button.dataset.supportSlot), divisionState.selectedSupport || null);
+    });
+    button.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      applyUnitToSlot("support", Number(button.dataset.supportSlot), null);
+    });
+    button.addEventListener("dragstart", (event) => {
+      const slotIndex = Number(button.dataset.supportSlot);
+      const unitId = divisionState.supportSlots[slotIndex];
+      if (!unitId) return;
+      event.dataTransfer.setData("text/plain", JSON.stringify({ source: "slot", kind: "support", fromSlot: slotIndex, unitId }));
+    });
+    button.addEventListener("dragover", (event) => event.preventDefault());
+    button.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const payload = parseDragPayload(event);
+      if (payload.kind !== "support") return;
+      const target = Number(button.dataset.supportSlot);
+      if (payload.source === "slot") {
+        const from = Number(payload.fromSlot);
+        const prevTarget = divisionState.supportSlots[target];
+        divisionState.supportSlots[target] = payload.unitId;
+        divisionState.supportSlots[from] = prevTarget || null;
+        renderDivisionGrid();
+        renderDivisionStats();
+        return;
+      }
+      applyUnitToSlot("support", target, payload.unitId || null);
     });
   });
 }
@@ -919,6 +1068,18 @@ function calculateDivisionStats() {
   const lineUnits = divisionState.lineSlots.filter(Boolean).map((id) => lineBattalionDefs.find((unit) => unit.id === id));
   const supportUnits = divisionState.supportSlots.filter(Boolean).map((id) => supportCompanyDefs.find((unit) => unit.id === id));
   const orgBase = lineUnits.length ? lineUnits.reduce((sum, unit) => sum + unit.org, 0) / lineUnits.length : 0;
+  const equipment = lineUnits.concat(supportUnits).reduce((acc, unit) => {
+    Object.entries(unit.equipment || {}).forEach(([key, value]) => {
+      acc[key] = (acc[key] || 0) + Number(value || 0);
+    });
+    return acc;
+  }, { infantry: 0, artillery: 0, support: 0 });
+  const lineTypes = lineUnits.reduce((acc, unit) => {
+    const type = unitTypeById[unit.id];
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
+  const previewDelta = getPreviewDelta();
   return {
     width: lineUnits.reduce((sum, unit) => sum + unit.width, 0),
     hp: Math.round(lineUnits.reduce((sum, unit) => sum + unit.hp, 0)),
@@ -929,28 +1090,155 @@ function calculateDivisionStats() {
     supportCount: supportUnits.length,
     xpCost: lineUnits.length * 5 + supportUnits.length * 10,
     lineFillPercent: Math.round((lineUnits.length / 25) * 100),
-    supportFillPercent: Math.round((supportUnits.length / 5) * 100)
+    supportFillPercent: Math.round((supportUnits.length / 5) * 100),
+    equipment,
+    lineTypes,
+    previewDelta
   };
 }
 
 function statBarMarkup(label, value, max, tone) {
   const percent = Math.max(0, Math.min(100, Math.round((Number(value || 0) * 100) / Math.max(1, max))));
+  const quality = percent >= 70 ? "good" : percent >= 40 ? "mid" : "low";
   return `
     <div class="division-stat-row">
       <div class="division-stat-head">
         <span>${label}</span>
         <strong>${value}</strong>
       </div>
-      <div class="division-stat-bar tone-${tone}">
+      <div class="division-stat-bar tone-${tone} quality-${quality}">
         <i style="width:${percent}%"></i>
       </div>
     </div>
   `;
 }
 
+function evaluateTemplate(stats) {
+  const warnings = [];
+  const errors = [];
+  if (!stats.battalionCount && stats.supportCount) {
+    errors.push("Только роты поддержки без линейных батальонов.");
+  }
+  if (stats.width > 45) {
+    warnings.push(`Боевая ширина ${stats.width} > 45: дорого в ширине фронта.`);
+  }
+  if (optimalWidths.has(stats.width)) {
+    warnings.push(`Ширина ${stats.width}: оптимально для фронта 80.`);
+  }
+  const infantryCount = (stats.lineTypes.infantry || 0) + (stats.lineTypes.mobile || 0);
+  if ((stats.lineTypes.armor || 0) > 0 && infantryCount === 0) {
+    warnings.push("Танки без пехоты: низкая организация.");
+  }
+  if ((stats.lineTypes.artillery || 0) > 0 && infantryCount === 0) {
+    warnings.push("Артиллерия без пехоты: низкая организация.");
+  }
+  let verdict = "Боеспособен";
+  let verdictClass = "ok";
+  if (errors.length || stats.battalionCount === 0) {
+    verdict = "Нежизнеспособен";
+    verdictClass = "bad";
+  } else if (warnings.length || stats.org < 35) {
+    verdict = "Требует доработки";
+    verdictClass = "warn";
+  }
+  return { warnings, errors, verdict, verdictClass };
+}
+
+function getPreviewDelta() {
+  if (!divisionState.previewKind || !divisionState.previewUnitId) return null;
+  const before = {
+    lineSlots: [...divisionState.lineSlots],
+    supportSlots: [...divisionState.supportSlots]
+  };
+  const targetSlots = divisionState.previewKind === "line" ? before.lineSlots : before.supportSlots;
+  const targetIndex = targetSlots.findIndex((slot) => !slot);
+  if (targetIndex === -1) return null;
+  targetSlots[targetIndex] = divisionState.previewUnitId;
+  const tmpState = {
+    lineSlots: before.lineSlots,
+    supportSlots: before.supportSlots
+  };
+  const calc = (state) => {
+    const lineUnits = state.lineSlots.filter(Boolean).map((id) => lineBattalionDefs.find((unit) => unit.id === id));
+    const supportUnits = state.supportSlots.filter(Boolean).map((id) => supportCompanyDefs.find((unit) => unit.id === id));
+    const orgBase = lineUnits.length ? lineUnits.reduce((sum, unit) => sum + unit.org, 0) / lineUnits.length : 0;
+    return {
+      org: Math.round(orgBase + supportUnits.reduce((sum, unit) => sum + unit.org, 0)),
+      soft: Math.round(lineUnits.reduce((sum, unit) => sum + unit.soft, 0) + supportUnits.reduce((sum, unit) => sum + unit.soft, 0))
+    };
+  };
+  const now = calc({ lineSlots: divisionState.lineSlots, supportSlots: divisionState.supportSlots });
+  const after = calc(tmpState);
+  return { org: after.org - now.org, soft: after.soft - now.soft };
+}
+
+function renderAiComparison(stats) {
+  const container = document.getElementById("division-ai-compare");
+  if (!container.dataset.ready) {
+    container.innerHTML = `
+      <h3>Сравнение с AI</h3>
+      <div class="template-actions">
+        <select id="ai-country" class="division-select">
+          <option value="GER">Германия</option>
+          <option value="SOV">СССР</option>
+        </select>
+        <select id="ai-year" class="division-select">
+          <option value="1936">1936</option>
+          <option value="1939">1939</option>
+          <option value="1941">1941</option>
+        </select>
+      </div>
+      <div id="ai-compare-table"></div>
+    `;
+    container.dataset.ready = "1";
+    container.querySelector("#ai-country").addEventListener("change", () => renderAiComparison(calculateDivisionStats()));
+    container.querySelector("#ai-year").addEventListener("change", () => renderAiComparison(calculateDivisionStats()));
+  }
+  const country = container.querySelector("#ai-country").value;
+  const year = container.querySelector("#ai-year").value;
+  const aiTemplate = aiReferenceTemplates[country]?.[year];
+  if (!aiTemplate) return;
+  const aiStats = calculateStatsForTemplate(aiTemplate.line, aiTemplate.support);
+  container.querySelector("#ai-compare-table").innerHTML = `
+    <div class="compare-card">
+      <h3>Вы vs ${aiTemplate.name}</h3>
+      <table class="compare-table">
+        <thead><tr><th>Параметр</th><th>Вы</th><th>AI</th></tr></thead>
+        <tbody>
+          <tr><td>Ширина</td><td>${stats.width}</td><td>${aiStats.width}</td></tr>
+          <tr><td>Organization</td><td>${stats.org}</td><td>${aiStats.org}</td></tr>
+          <tr><td>Soft Attack</td><td>${stats.soft}</td><td>${aiStats.soft}</td></tr>
+          <tr><td>Hard Attack</td><td>${stats.hard}</td><td>${aiStats.hard}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function calculateStatsForTemplate(line, support) {
+  const lineUnits = line.map((id) => lineBattalionDefs.find((unit) => unit.id === id)).filter(Boolean);
+  const supportUnits = support.map((id) => supportCompanyDefs.find((unit) => unit.id === id)).filter(Boolean);
+  const orgBase = lineUnits.length ? lineUnits.reduce((sum, unit) => sum + unit.org, 0) / lineUnits.length : 0;
+  return {
+    width: lineUnits.reduce((sum, unit) => sum + unit.width, 0),
+    org: Math.round(orgBase + supportUnits.reduce((sum, unit) => sum + unit.org, 0)),
+    soft: Math.round(lineUnits.reduce((sum, unit) => sum + unit.soft, 0) + supportUnits.reduce((sum, unit) => sum + unit.soft, 0)),
+    hard: Math.round(lineUnits.reduce((sum, unit) => sum + unit.hard, 0) + supportUnits.reduce((sum, unit) => sum + unit.hard, 0))
+  };
+}
+
 function renderDivisionStats() {
   const stats = calculateDivisionStats();
+  const validation = evaluateTemplate(stats);
+  const warningLines = validation.warnings.map((item) => `<li>${item}</li>`).join("");
+  const errorLines = validation.errors.map((item) => `<li>${item}</li>`).join("");
+  const previewLine = stats.previewDelta
+    ? `<div class="division-preview">Предпросмотр: ORG ${stats.previewDelta.org >= 0 ? "+" : ""}${stats.previewDelta.org}, SA ${stats.previewDelta.soft >= 0 ? "+" : ""}${stats.previewDelta.soft}</div>`
+    : "";
+  const whatIfOrg = Math.max(0, stats.org - 4);
+  const whatIfSoft = stats.soft + 24;
   document.getElementById("division-stats").innerHTML = `
+    <div class="division-verdict verdict-${validation.verdictClass}">${validation.verdict}</div>
     <div class="division-fill-grid">
       <div>
         <div class="division-stat-head"><span>Линейных батальонов</span><strong>${stats.battalionCount}/25</strong></div>
@@ -967,8 +1255,24 @@ function renderDivisionStats() {
     ${statBarMarkup("Hard Attack", stats.hard, 260, "hard")}
     ${statBarMarkup("Combat Width", stats.width, 50, "width")}
     ${statBarMarkup("Army XP Cost", stats.xpCost, 200, "xp")}
+    <div class="division-resource-grid">
+      <div>Infantry Eq.: <strong>${stats.equipment.infantry}</strong></div>
+      <div>Artillery: <strong>${stats.equipment.artillery}</strong></div>
+      <div>Support Eq.: <strong>${stats.equipment.support}</strong></div>
+    </div>
+    <div class="what-if-card">
+      <div class="division-stat-head"><span>Что если: 1 пехота -> 1 артиллерия</span><strong>ORG ${whatIfOrg} / SA ${whatIfSoft}</strong></div>
+      <div class="what-if-bars">
+        <i style="width:${Math.max(0, Math.min(100, Math.round((whatIfOrg * 100) / 80)))}%"></i>
+        <i style="width:${Math.max(0, Math.min(100, Math.round((whatIfSoft * 100) / 360)))}%"></i>
+      </div>
+    </div>
+    ${errorLines ? `<ul class="division-errors">${errorLines}</ul>` : ""}
+    ${warningLines ? `<ul class="division-warnings">${warningLines}</ul>` : ""}
+    ${previewLine}
     <div class="division-help">Подсказка: выберите юнит справа и кликайте по слотам, чтобы заполнять шаблон.</div>
   `;
+  renderAiComparison(stats);
 }
 
 function setTemplateStatus(message) {
@@ -979,6 +1283,8 @@ function resetDivisionTemplate() {
   activeTemplateId = null;
   divisionState.lineSlots = Array(25).fill(null);
   divisionState.supportSlots = Array(5).fill(null);
+  divisionState.previewKind = null;
+  divisionState.previewUnitId = null;
   document.getElementById("template-name").value = "Новый шаблон";
   renderDivisionGrid();
   renderDivisionStats();
@@ -1060,6 +1366,35 @@ async function saveDivisionTemplate() {
   }
 }
 
+function serializeDivisionTemplate() {
+  const line = divisionState.lineSlots.map((slot) => slot || "__").join("-");
+  const support = divisionState.supportSlots.map((slot) => slot || "__").join("-");
+  return `STRAT_DIV|name=${encodeURIComponent(document.getElementById("template-name").value.trim() || "Новый шаблон")}|line=${line}|support=${support}`;
+}
+
+async function copyDivisionCode() {
+  const code = serializeDivisionTemplate();
+  try {
+    await navigator.clipboard.writeText(code);
+    setTemplateStatus("Код шаблона скопирован в буфер обмена.");
+  } catch {
+    setTemplateStatus(`Не удалось скопировать автоматически. Код: ${code}`);
+  }
+}
+
+function loadMetaTemplate(templateId) {
+  const meta = metaTemplates[templateId];
+  if (!meta) return;
+  divisionState.lineSlots = Array(25).fill(null);
+  divisionState.supportSlots = Array(5).fill(null);
+  meta.line.slice(0, 25).forEach((unitId, index) => { divisionState.lineSlots[index] = unitId; });
+  meta.support.slice(0, 5).forEach((unitId, index) => { divisionState.supportSlots[index] = unitId; });
+  document.getElementById("template-name").value = meta.name;
+  setTemplateStatus(`Загружен учебный шаблон ${meta.name}: ${meta.note}`);
+  renderDivisionGrid();
+  renderDivisionStats();
+}
+
 function setupToolsModal() {
   const modal = document.getElementById("tools-modal");
   const openModal = async (event) => {
@@ -1079,6 +1414,10 @@ function setupToolsModal() {
   });
   document.getElementById("new-division").addEventListener("click", resetDivisionTemplate);
   document.getElementById("save-division").addEventListener("click", saveDivisionTemplate);
+  document.getElementById("copy-division-code").addEventListener("click", copyDivisionCode);
+  document.querySelectorAll("[data-load-meta]").forEach((button) => {
+    button.addEventListener("click", () => loadMetaTemplate(button.dataset.loadMeta));
+  });
 }
 
 function renderCurrentUser() {
