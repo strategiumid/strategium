@@ -1468,6 +1468,24 @@ body::before {
   color: #97a9c4;
 }
 
+.stellaris-check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+}
+
+.stellaris-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #b4c3d8;
+  font-size: 0.78rem;
+}
+
+.constructor-module .division-select[multiple] {
+  min-height: 110px;
+}
+
 .constructor-module-detail {
   margin-top: 10px;
   border: 1px solid #223349;

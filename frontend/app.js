@@ -40,53 +40,81 @@ const mockFactions = [
 const constructorsCatalog = {
   hoi4: {
     title: "Hearts of Iron IV",
-    subtitle: "Конструктор дивизий и боевых шаблонов",
-    features: [
-      "Сетка дивизий, роты поддержки, drag&drop и валидация ширины",
-      "Технологии/доктрины через слайдеры и пересчет статов в реальном времени",
-      "Сравнение с AI-шаблонами, мета-пресеты и экспорт кода",
-      "Расчет XP и IC-стоимости"
-    ]
-  },
-  ck3: {
-    title: "Crusader Kings III",
-    subtitle: "Династический планировщик",
-    features: [
-      "Черты характера 3x3 с конфликтами и расчетом очков",
-      "Планировщик Lifestyle и оптимальный путь перков",
-      "Симулятор брачного союза и наследования",
-      "Доменный калькулятор и редактор герба"
-    ]
+    subtitle: "Конструктор дивизий и боевых шаблонов"
   },
   stellaris: {
     title: "Stellaris",
-    subtitle: "Конструктор Империи и Кораблей",
-    features: [
-      "Empire Builder: происхождение, этика, гражданские модели, раса",
-      "Ship Designer: секции, DPS, энергия, сплавы и дуэль 1v1",
-      "Планировщик традиций/вознесения и генератор namelist-имен"
-    ]
-  },
-  eu4: {
-    title: "Europa Universalis IV",
-    subtitle: "Мастер-планировщик кампании",
-    features: [
-      "Планировщик Idea Groups, политик и синергий",
-      "Симулятор развития провинций и торговых потоков",
-      "Конструктор армии, дерево миссий и анализ дипломатии"
-    ]
-  },
-  vic3: {
-    title: "Victoria 3",
-    subtitle: "Планировщик экономики и общества",
-    features: [
-      "Граф производственных цепочек и расчет прибыльности",
-      "Редактор законов и политической стабильности",
-      "Калькулятор населения/миграции и политический компас"
-    ]
+    subtitle: "Ship Designer + Empire Builder"
   }
 };
 let constructorsActiveTab = "hoi4";
+const stellarisShipDefs = {
+  sections: {
+    corvette: ["interceptor", "missile_boat", "picket_ship"],
+    destroyer: ["gunship", "artillery", "picket"]
+  },
+  weapons: {
+    laser: { dpsShield: 6, dpsArmor: 12, dpsHull: 8, power: 8, alloys: 10 },
+    mass_driver: { dpsShield: 11, dpsArmor: 7, dpsHull: 8, power: 6, alloys: 8 },
+    missile: { dpsShield: 7, dpsArmor: 9, dpsHull: 13, power: 10, alloys: 12 },
+    plasma: { dpsShield: 4, dpsArmor: 14, dpsHull: 10, power: 12, alloys: 14 }
+  },
+  defenses: {
+    shield: { shield: 120, armor: 10, hull: 0, power: 10, alloys: 10 },
+    armor: { shield: 20, armor: 140, hull: 0, power: 4, alloys: 12 },
+    hull: { shield: 0, armor: 20, hull: 150, power: 2, alloys: 8 }
+  },
+  reactors: {
+    fission: { energy: 45, alloys: 8 },
+    fusion: { energy: 70, alloys: 14 },
+    cold_fusion: { energy: 95, alloys: 22 }
+  }
+};
+const stellarisEmpireDefs = {
+  origins: {
+    prosperous_unification: { economy: 12, military: 4, diplomacy: 3 },
+    remnants: { economy: 8, military: 5, diplomacy: 5 },
+    void_dwellers: { economy: 6, military: 4, diplomacy: 8 }
+  },
+  ethics: {
+    militarist: { military: 10, diplomacy: -3, economy: 2 },
+    pacifist: { military: -6, diplomacy: 8, economy: 4 },
+    materialist: { military: 2, diplomacy: 1, economy: 9 },
+    spiritualist: { military: 1, diplomacy: 6, economy: 3 },
+    xenophile: { military: -2, diplomacy: 11, economy: 2 },
+    xenophobe: { military: 5, diplomacy: -6, economy: 4 }
+  },
+  civics: {
+    meritocracy: { economy: 8, military: 2, diplomacy: 2 },
+    distinguished_admiralty: { economy: 1, military: 10, diplomacy: -1 },
+    diplomatic_corps: { economy: 1, military: 0, diplomacy: 10 },
+    technocracy: { economy: 10, military: 1, diplomacy: 1 }
+  },
+  traits: {
+    intelligent: { points: 2, economy: 7, military: 0, diplomacy: 0 },
+    strong: { points: 1, economy: 0, military: 6, diplomacy: 0 },
+    charismatic: { points: 1, economy: 0, military: 0, diplomacy: 6 },
+    unruly: { points: -2, economy: -3, military: -2, diplomacy: -1 },
+    sedentary: { points: -1, economy: -2, military: 0, diplomacy: -2 }
+  }
+};
+const stellarisState = {
+  mode: "ship",
+  ship: {
+    hull: "corvette",
+    section: "interceptor",
+    weapon: "laser",
+    defense: "shield",
+    reactor: "fission",
+    utilitySlots: 2
+  },
+  empire: {
+    origin: "prosperous_unification",
+    ethics: ["materialist", "xenophile"],
+    civics: ["meritocracy", "technocracy"],
+    traits: ["intelligent", "unruly"]
+  }
+};
 
 async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -975,6 +1003,179 @@ function setupFactionsModal() {
   });
 }
 
+function calculateStellarisShipStats() {
+  const ship = stellarisState.ship;
+  const weapon = stellarisShipDefs.weapons[ship.weapon];
+  const defense = stellarisShipDefs.defenses[ship.defense];
+  const reactor = stellarisShipDefs.reactors[ship.reactor];
+  const slots = Number(ship.utilitySlots || 1);
+  const powerUse = (weapon.power * 2) + (defense.power * slots);
+  const availablePower = reactor.energy;
+  return {
+    dpsShield: Math.round(weapon.dpsShield * 2),
+    dpsArmor: Math.round(weapon.dpsArmor * 2),
+    dpsHull: Math.round(weapon.dpsHull * 2),
+    shield: defense.shield * slots,
+    armor: defense.armor * slots,
+    hull: 300 + (defense.hull * slots),
+    alloys: Math.round((weapon.alloys * 2) + (defense.alloys * slots) + reactor.alloys),
+    powerUse,
+    availablePower
+  };
+}
+
+function calculateStellarisEmpireStats() {
+  const empire = stellarisState.empire;
+  const base = { economy: 50, military: 50, diplomacy: 50 };
+  const origin = stellarisEmpireDefs.origins[empire.origin];
+  Object.entries(origin).forEach(([k, v]) => { base[k] += v; });
+  empire.ethics.forEach((ethic) => {
+    const mod = stellarisEmpireDefs.ethics[ethic];
+    if (!mod) return;
+    Object.entries(mod).forEach(([k, v]) => { base[k] += v; });
+  });
+  empire.civics.forEach((civic) => {
+    const mod = stellarisEmpireDefs.civics[civic];
+    if (!mod) return;
+    Object.entries(mod).forEach(([k, v]) => { base[k] += v; });
+  });
+  let traitPoints = 0;
+  empire.traits.forEach((trait) => {
+    const mod = stellarisEmpireDefs.traits[trait];
+    if (!mod) return;
+    traitPoints += mod.points;
+    Object.entries(mod).forEach(([k, v]) => {
+      if (k === "points") return;
+      base[k] += v;
+    });
+  });
+  return { ...base, traitPoints };
+}
+
+function selectOptionsFromObject(defs, selected) {
+  return Object.keys(defs).map((key) => `<option value="${key}" ${key === selected ? "selected" : ""}>${key.replace(/_/g, " ")}</option>`).join("");
+}
+
+function renderStellarisConstructor() {
+  const content = document.getElementById("constructors-content");
+  const mode = stellarisState.mode;
+  const modeTabs = `
+    <div class="template-actions">
+      <button type="button" class="sections-btn ${mode === "ship" ? "primary" : ""}" data-stellaris-mode="ship">Ship Designer</button>
+      <button type="button" class="sections-btn ${mode === "empire" ? "primary" : ""}" data-stellaris-mode="empire">Empire Builder</button>
+    </div>
+  `;
+  if (mode === "ship") {
+    const ship = stellarisState.ship;
+    const sections = stellarisShipDefs.sections[ship.hull] || [];
+    if (!sections.includes(ship.section)) ship.section = sections[0];
+    const stats = calculateStellarisShipStats();
+    content.innerHTML = `
+      <article class="constructor-card">
+        <header><h3>Stellaris — Ship Designer</h3><small>Секции, вооружение, защита, энергия и стоимость</small></header>
+        ${modeTabs}
+        <div class="constructor-grid">
+          <div class="constructor-module">
+            <label class="division-inline-label">Класс корпуса</label>
+            <select id="st-hull" class="division-select">${selectOptionsFromObject(stellarisShipDefs.sections, ship.hull)}</select>
+            <label class="division-inline-label">Секция</label>
+            <select id="st-section" class="division-select">${sections.map((key) => `<option value="${key}" ${key === ship.section ? "selected" : ""}>${key.replace(/_/g, " ")}</option>`).join("")}</select>
+            <label class="division-inline-label">Оружие</label>
+            <select id="st-weapon" class="division-select">${selectOptionsFromObject(stellarisShipDefs.weapons, ship.weapon)}</select>
+            <label class="division-inline-label">Защита</label>
+            <select id="st-defense" class="division-select">${selectOptionsFromObject(stellarisShipDefs.defenses, ship.defense)}</select>
+            <label class="division-inline-label">Реактор</label>
+            <select id="st-reactor" class="division-select">${selectOptionsFromObject(stellarisShipDefs.reactors, ship.reactor)}</select>
+            <label class="division-inline-label">Utility слотов: <strong id="st-utility-value">${ship.utilitySlots}</strong></label>
+            <input id="st-utility" type="range" min="1" max="6" step="1" value="${ship.utilitySlots}" />
+          </div>
+          <div class="constructor-module">
+            <strong>Боевые показатели</strong>
+            <p>DPS vs Shields: <strong>${stats.dpsShield}</strong></p>
+            <p>DPS vs Armor: <strong>${stats.dpsArmor}</strong></p>
+            <p>DPS vs Hull: <strong>${stats.dpsHull}</strong></p>
+            <p>Shields / Armor / Hull: <strong>${stats.shield} / ${stats.armor} / ${stats.hull}</strong></p>
+            <p>Энергия: <strong>${stats.powerUse}/${stats.availablePower}</strong></p>
+            <p>Стоимость сплавов: <strong>${stats.alloys}</strong></p>
+            <div class="division-stat-bar ${stats.powerUse <= stats.availablePower ? "quality-good" : "quality-low"}"><i style="width:${Math.min(100, Math.round((stats.powerUse * 100) / Math.max(1, stats.availablePower)))}%"></i></div>
+          </div>
+        </div>
+      </article>
+    `;
+    content.querySelectorAll("[data-stellaris-mode]").forEach((button) => button.addEventListener("click", () => {
+      stellarisState.mode = button.dataset.stellarisMode;
+      renderStellarisConstructor();
+    }));
+    content.querySelector("#st-hull").addEventListener("change", (e) => { stellarisState.ship.hull = e.target.value; renderStellarisConstructor(); });
+    content.querySelector("#st-section").addEventListener("change", (e) => { stellarisState.ship.section = e.target.value; renderStellarisConstructor(); });
+    content.querySelector("#st-weapon").addEventListener("change", (e) => { stellarisState.ship.weapon = e.target.value; renderStellarisConstructor(); });
+    content.querySelector("#st-defense").addEventListener("change", (e) => { stellarisState.ship.defense = e.target.value; renderStellarisConstructor(); });
+    content.querySelector("#st-reactor").addEventListener("change", (e) => { stellarisState.ship.reactor = e.target.value; renderStellarisConstructor(); });
+    content.querySelector("#st-utility").addEventListener("input", (e) => {
+      stellarisState.ship.utilitySlots = Number(e.target.value || 1);
+      content.querySelector("#st-utility-value").textContent = `${stellarisState.ship.utilitySlots}`;
+      renderStellarisConstructor();
+    });
+    return;
+  }
+
+  const empireStats = calculateStellarisEmpireStats();
+  const ethicOptions = Object.keys(stellarisEmpireDefs.ethics).map((key) => `
+    <label class="stellaris-check">
+      <input type="checkbox" value="${key}" ${stellarisState.empire.ethics.includes(key) ? "checked" : ""} data-ethic>
+      ${key.replace(/_/g, " ")}
+    </label>
+  `).join("");
+  const civicOptions = Object.keys(stellarisEmpireDefs.civics).map((key) => `<option value="${key}" ${stellarisState.empire.civics.includes(key) ? "selected" : ""}>${key.replace(/_/g, " ")}</option>`).join("");
+  const traitOptions = Object.keys(stellarisEmpireDefs.traits).map((key) => `<option value="${key}" ${stellarisState.empire.traits.includes(key) ? "selected" : ""}>${key.replace(/_/g, " ")}</option>`).join("");
+  content.innerHTML = `
+    <article class="constructor-card">
+      <header><h3>Stellaris — Empire Builder</h3><small>Origin, Ethics, Civics и черты расы</small></header>
+      ${modeTabs}
+      <div class="constructor-grid">
+        <div class="constructor-module">
+          <label class="division-inline-label">Origin</label>
+          <select id="st-origin" class="division-select">${selectOptionsFromObject(stellarisEmpireDefs.origins, stellarisState.empire.origin)}</select>
+          <label class="division-inline-label">Ethics (до 3)</label>
+          <div class="stellaris-check-grid">${ethicOptions}</div>
+          <label class="division-inline-label">Civics (до 2)</label>
+          <select id="st-civics" class="division-select" multiple size="4">${civicOptions}</select>
+          <label class="division-inline-label">Traits (очки <= 2)</label>
+          <select id="st-traits" class="division-select" multiple size="5">${traitOptions}</select>
+        </div>
+        <div class="constructor-module">
+          <strong>Итог империи</strong>
+          <p>Экономика: <strong>${empireStats.economy}</strong></p>
+          <p>Военный потенциал: <strong>${empireStats.military}</strong></p>
+          <p>Дипломатия: <strong>${empireStats.diplomacy}</strong></p>
+          <p>Trait points: <strong>${empireStats.traitPoints}</strong></p>
+          <div class="division-stat-bar ${empireStats.traitPoints <= 2 ? "quality-good" : "quality-low"}"><i style="width:${Math.min(100, Math.round(((empireStats.traitPoints + 4) * 100) / 10))}%"></i></div>
+        </div>
+      </div>
+    </article>
+  `;
+  content.querySelectorAll("[data-stellaris-mode]").forEach((button) => button.addEventListener("click", () => {
+    stellarisState.mode = button.dataset.stellarisMode;
+    renderStellarisConstructor();
+  }));
+  content.querySelector("#st-origin").addEventListener("change", (e) => { stellarisState.empire.origin = e.target.value; renderStellarisConstructor(); });
+  content.querySelectorAll("[data-ethic]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const selected = [...content.querySelectorAll("[data-ethic]:checked")].map((el) => el.value).slice(0, 3);
+      stellarisState.empire.ethics = selected;
+      renderStellarisConstructor();
+    });
+  });
+  content.querySelector("#st-civics").addEventListener("change", (e) => {
+    stellarisState.empire.civics = [...e.target.selectedOptions].map((opt) => opt.value).slice(0, 2);
+    renderStellarisConstructor();
+  });
+  content.querySelector("#st-traits").addEventListener("change", (e) => {
+    stellarisState.empire.traits = [...e.target.selectedOptions].map((opt) => opt.value);
+    renderStellarisConstructor();
+  });
+}
+
 function renderConstructorsHub(activeKey = "hoi4") {
   constructorsActiveTab = activeKey;
   const tabs = document.getElementById("constructors-tabs");
@@ -983,24 +1184,23 @@ function renderConstructorsHub(activeKey = "hoi4") {
     <button type="button" class="sections-btn ${key === activeKey ? "primary" : ""}" data-constructor-tab="${key}">${entry.title}</button>
   `).join("");
   const active = constructorsCatalog[activeKey];
+  if (activeKey === "stellaris") {
+    renderStellarisConstructor();
+    tabs.querySelectorAll("[data-constructor-tab]").forEach((button) => {
+      button.addEventListener("click", () => renderConstructorsHub(button.dataset.constructorTab));
+    });
+    return;
+  }
   content.innerHTML = `
     <article class="constructor-card">
       <header>
         <h3>${active.title}</h3>
         <small>${active.subtitle}</small>
       </header>
-      <div class="constructor-grid">
-        ${active.features.map((feature, idx) => `
-          <div class="constructor-module">
-            <strong>Блок ${idx + 1}</strong>
-            <p>${feature}</p>
-          </div>
-        `).join("")}
-      </div>
       <div class="template-actions">
-        ${activeKey === "hoi4" ? `<button type="button" class="sections-btn primary" id="open-hoi4-live">Открыть конструктор HOI4</button>` : ""}
+        <button type="button" class="sections-btn primary" id="open-hoi4-live">Открыть конструктор HOI4</button>
       </div>
-      <div class="template-status">Это единый конструктор ${active.title} без подмодулей.</div>
+      <div class="template-status">Конструктор HOI4 открыт как отдельный рабочий режим.</div>
     </article>
   `;
   tabs.querySelectorAll("[data-constructor-tab]").forEach((button) => {
