@@ -41,53 +41,48 @@ const constructorsCatalog = {
   hoi4: {
     title: "Hearts of Iron IV",
     subtitle: "Конструктор дивизий и боевых шаблонов",
-    modules: [
-      "Полный конструктор дивизий (активный модуль)",
-      "Валидация боевой ширины и состава",
-      "Сравнение с AI-шаблонами и мета-пресеты",
-      "Экспорт кода шаблона + IC/XP расчет"
+    features: [
+      "Сетка дивизий, роты поддержки, drag&drop и валидация ширины",
+      "Технологии/доктрины через слайдеры и пересчет статов в реальном времени",
+      "Сравнение с AI-шаблонами, мета-пресеты и экспорт кода",
+      "Расчет XP и IC-стоимости"
     ]
   },
   ck3: {
     title: "Crusader Kings III",
     subtitle: "Династический планировщик",
-    modules: [
-      "Конструктор черт характера (3x3, конфликты, очки престижа/благочестия)",
-      "Планировщик lifestyle-перков с маршрутом и ETA",
+    features: [
+      "Черты характера 3x3 с конфликтами и расчетом очков",
+      "Планировщик Lifestyle и оптимальный путь перков",
       "Симулятор брачного союза и наследования",
-      "Калькулятор доменов с сравнением конфигураций",
-      "Генератор гербов (CoA) с экспортом"
+      "Доменный калькулятор и редактор герба"
     ]
   },
   stellaris: {
     title: "Stellaris",
     subtitle: "Конструктор Империи и Кораблей",
-    modules: [
-      "Empire Builder с этикой, происхождением, гражданскими моделями и расой",
-      "Ship Designer: секции, DPS, энергия, сплавы, 1v1-симулятор",
-      "Планировщик традиций и перков вознесения",
-      "Генератор названий под namelist-стили"
+    features: [
+      "Empire Builder: происхождение, этика, гражданские модели, раса",
+      "Ship Designer: секции, DPS, энергия, сплавы и дуэль 1v1",
+      "Планировщик традиций/вознесения и генератор namelist-имен"
     ]
   },
   eu4: {
     title: "Europa Universalis IV",
     subtitle: "Мастер-планировщик кампании",
-    modules: [
-      "Планировщик групп идей и политик",
-      "Симулятор развития провинций и оптимизатор монархических очков",
-      "Калькулятор торговли и маршрутов купцов",
-      "Конструктор армии по эпохам и воентеху",
-      "Mission Tree planner и дипломатический анализатор"
+    features: [
+      "Планировщик Idea Groups, политик и синергий",
+      "Симулятор развития провинций и торговых потоков",
+      "Конструктор армии, дерево миссий и анализ дипломатии"
     ]
   },
   vic3: {
     title: "Victoria 3",
     subtitle: "Планировщик экономики и общества",
-    modules: [
-      "Конструктор производственных цепочек и граф товаров",
-      "Редактор законов и доступности реформ",
-      "Калькулятор населения и миграции",
-      "Политический компас и баланс интерес-групп"
+    features: [
+      "Граф производственных цепочек и расчет прибыльности",
+      "Редактор законов и политической стабильности",
+      "Калькулятор населения/миграции и политический компас"
     ]
   }
 };
@@ -980,35 +975,6 @@ function setupFactionsModal() {
   });
 }
 
-function renderConstructorModuleDetail(gameKey, moduleIndex) {
-  const content = document.getElementById("constructors-content");
-  const game = constructorsCatalog[gameKey];
-  const moduleTitle = game.modules[moduleIndex];
-  const isHoi4Live = gameKey === "hoi4" && moduleIndex === 0;
-  content.innerHTML = `
-    <article class="constructor-card">
-      <header>
-        <h3>${game.title}</h3>
-        <small>${moduleTitle}</small>
-      </header>
-      <div class="constructor-module-detail">
-        <p>Модуль открыт в рабочем режиме прототипа.</p>
-        <p>Следующий шаг — углубление формул, данных и интеграция с backend.</p>
-        <div class="template-actions">
-          <button type="button" class="sections-btn" id="constructors-back">Назад к модулям</button>
-          ${isHoi4Live ? `<button type="button" class="sections-btn primary" id="open-hoi4-live">Открыть конструктор HOI4</button>` : ""}
-        </div>
-      </div>
-    </article>
-  `;
-  document.getElementById("constructors-back")?.addEventListener("click", () => renderConstructorsHub(gameKey));
-  document.getElementById("open-hoi4-live")?.addEventListener("click", () => {
-    document.getElementById("constructors-modal")?.classList.add("hidden");
-    document.getElementById("tools-modal")?.classList.remove("hidden");
-    loadTemplates();
-  });
-}
-
 function renderConstructorsHub(activeKey = "hoi4") {
   constructorsActiveTab = activeKey;
   const tabs = document.getElementById("constructors-tabs");
@@ -1024,24 +990,26 @@ function renderConstructorsHub(activeKey = "hoi4") {
         <small>${active.subtitle}</small>
       </header>
       <div class="constructor-grid">
-        ${active.modules.map((module, idx) => `
+        ${active.features.map((feature, idx) => `
           <div class="constructor-module">
-            <strong>Модуль ${idx + 1}</strong>
-            <p>${module}</p>
-            <button type="button" class="sections-btn" data-open-constructor-module="${activeKey}" data-module-index="${idx}">Открыть прототип</button>
+            <strong>Блок ${idx + 1}</strong>
+            <p>${feature}</p>
           </div>
         `).join("")}
       </div>
-      <div class="template-status">Каркас модулей добавлен. Можно последовательно углублять каждый конструктор до игрового уровня.</div>
+      <div class="template-actions">
+        ${activeKey === "hoi4" ? `<button type="button" class="sections-btn primary" id="open-hoi4-live">Открыть конструктор HOI4</button>` : ""}
+      </div>
+      <div class="template-status">Это единый конструктор ${active.title} без подмодулей.</div>
     </article>
   `;
   tabs.querySelectorAll("[data-constructor-tab]").forEach((button) => {
     button.addEventListener("click", () => renderConstructorsHub(button.dataset.constructorTab));
   });
-  content.querySelectorAll("[data-open-constructor-module]").forEach((button) => {
-    button.addEventListener("click", () => {
-      renderConstructorModuleDetail(button.dataset.openConstructorModule, Number(button.dataset.moduleIndex || 0));
-    });
+  document.getElementById("open-hoi4-live")?.addEventListener("click", () => {
+    document.getElementById("constructors-modal")?.classList.add("hidden");
+    document.getElementById("tools-modal")?.classList.remove("hidden");
+    loadTemplates();
   });
 }
 
