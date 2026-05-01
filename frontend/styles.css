@@ -12,6 +12,30 @@
 
 * { box-sizing: border-box; }
 
+html {
+  scrollbar-color: #3a4f6e #0a111b;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #0a111b;
+  border: 1px solid #1f2b3d;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3f5a7f, #2d3f59);
+  border: 1px solid #5b79a3;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5675a1, #3a516f);
+}
+
 body {
   margin: 0;
   font-family: Consolas, "Segoe UI", monospace;
@@ -1263,6 +1287,11 @@ body::before {
   font: inherit;
   font-size: 0.68rem;
   padding: 5px 8px;
+}
+
+.division-inline-label {
+  color: #93a5bd;
+  font-size: 0.68rem;
 }
 
 @media (max-width: 920px) {

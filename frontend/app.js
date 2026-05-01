@@ -857,7 +857,8 @@ const divisionState = {
   selectedLine: null,
   selectedSupport: null,
   previewUnitId: null,
-  previewKind: null
+  previewKind: null,
+  battalionTechLevel: 0
 };
 
 const optimalWidths = new Set([20, 21, 27, 42, 45]);
@@ -896,13 +897,28 @@ const metaTemplates = {
   }
 };
 
+function researchMultiplier(level) {
+  return 1 + (Number(level || 0) * 0.06);
+}
+
+function applyLineResearch(unit) {
+  const mul = researchMultiplier(divisionState.battalionTechLevel);
+  return {
+    ...unit,
+    hp: Math.round(unit.hp * mul),
+    org: Math.round(unit.org * mul),
+    soft: Math.round(unit.soft * mul),
+    hard: Math.round(unit.hard * mul)
+  };
+}
+
 function renderPalette() {
   const battalionPalette = document.getElementById("battalion-palette");
   const supportPalette = document.getElementById("support-palette");
   battalionPalette.innerHTML = lineBattalionDefs.map((unit) => `
     <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}" title="${unit.role}">
       ${unitIconSvg(unit.icon)} ${unit.name}
-      <small>W:${unit.width} ORG:${unit.org} SA:${unit.soft} HA:${unit.hard}</small>
+      <small>${(() => { const scaled = applyLineResearch(unit); return `W:${scaled.width} ORG:${scaled.org} SA:${scaled.soft} HA:${scaled.hard}`; })()}</small>
     </button>
   `).join("");
   supportPalette.innerHTML = supportCompanyDefs.map((unit) => `
@@ -990,7 +1006,7 @@ function renderDivisionGrid() {
     const unit = unitId ? lineBattalionDefs.find((def) => def.id === unitId) : null;
     const unitType = unit ? unitTypeById[unit.id] || "support" : "";
     const previewClass = !unit && divisionState.previewKind === "line" && divisionState.previewUnitId ? "preview-target" : "";
-    return `<button draggable="${unit ? "true" : "false"}" class="division-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-line-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name}</small>` : "Пусто"}</button>`;
+    return `<button draggable="${unit ? "true" : "false"}" class="division-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-line-slot="${index}" title="${unit ? `${unit.name} (ур. ${divisionState.battalionTechLevel})` : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name} • L${divisionState.battalionTechLevel}</small>` : "Пусто"}</button>`;
   }).join("");
   supportGrid.innerHTML = divisionState.supportSlots.map((unitId, index) => {
     const unit = unitId ? supportCompanyDefs.find((def) => def.id === unitId) : null;
@@ -1065,7 +1081,7 @@ function renderDivisionGrid() {
 }
 
 function calculateDivisionStats() {
-  const lineUnits = divisionState.lineSlots.filter(Boolean).map((id) => lineBattalionDefs.find((unit) => unit.id === id));
+  const lineUnits = divisionState.lineSlots.filter(Boolean).map((id) => applyLineResearch(lineBattalionDefs.find((unit) => unit.id === id)));
   const supportUnits = divisionState.supportSlots.filter(Boolean).map((id) => supportCompanyDefs.find((unit) => unit.id === id));
   const orgBase = lineUnits.length ? lineUnits.reduce((sum, unit) => sum + unit.org, 0) / lineUnits.length : 0;
   const equipment = lineUnits.concat(supportUnits).reduce((acc, unit) => {
@@ -1369,7 +1385,7 @@ async function saveDivisionTemplate() {
 function serializeDivisionTemplate() {
   const line = divisionState.lineSlots.map((slot) => slot || "__").join("-");
   const support = divisionState.supportSlots.map((slot) => slot || "__").join("-");
-  return `STRAT_DIV|name=${encodeURIComponent(document.getElementById("template-name").value.trim() || "Новый шаблон")}|line=${line}|support=${support}`;
+  return `STRAT_DIV|name=${encodeURIComponent(document.getElementById("template-name").value.trim() || "Новый шаблон")}|tech=${divisionState.battalionTechLevel}|line=${line}|support=${support}`;
 }
 
 async function copyDivisionCode() {
@@ -1415,6 +1431,12 @@ function setupToolsModal() {
   document.getElementById("new-division").addEventListener("click", resetDivisionTemplate);
   document.getElementById("save-division").addEventListener("click", saveDivisionTemplate);
   document.getElementById("copy-division-code").addEventListener("click", copyDivisionCode);
+  document.getElementById("battalion-tech-level").addEventListener("change", (event) => {
+    divisionState.battalionTechLevel = Number(event.target.value || 0);
+    renderPalette();
+    renderDivisionGrid();
+    renderDivisionStats();
+  });
   document.querySelectorAll("[data-load-meta]").forEach((button) => {
     button.addEventListener("click", () => loadMetaTemplate(button.dataset.loadMeta));
   });
