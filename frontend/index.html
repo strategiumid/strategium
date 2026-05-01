@@ -44,8 +44,8 @@
       <button id="dev-login" class="auth-btn">Dev вход</button>
       <button id="logout" class="auth-btn hidden">Выйти</button>
       <span id="steam-user" class="steam-user">Гость</span>
-      <span class="dot"></span>
-      <span class="dot"></span>
+      <span class="dot" id="user-status-dot" title="Гость"></span>
+      <span id="user-status-label" class="user-status-label">Гость</span>
       <div class="lang">RU</div>
     </div>
   </header>
@@ -153,9 +153,11 @@
           <option value="achievements">По достижениям</option>
           <option value="hours">По часам</option>
         </select>
+        <button id="compare-self" class="sections-btn">Сравнить с собой</button>
       </div>
       <div id="leaderboard-status" class="template-status"></div>
       <div id="leaderboard-list" class="leaderboard-list"></div>
+      <div id="leaderboard-compare" class="leaderboard-compare hidden"></div>
     </section>
   </div>
 
@@ -197,7 +199,7 @@
           <div id="support-grid" class="support-grid"></div>
           <div class="template-actions">
             <input id="template-name" class="template-name" type="text" maxlength="120" placeholder="Название шаблона" value="Новый шаблон" />
-            <button id="save-division" class="sections-btn">Сохранить</button>
+            <button id="save-division" class="sections-btn primary">Сохранить</button>
             <button id="new-division" class="sections-btn">Новый</button>
             <button id="clear-division" class="sections-btn">Очистить</button>
           </div>

@@ -31,6 +31,7 @@ let currentUser = { authenticated: false, displayName: "Гость" };
 let activeTemplateId = null;
 let steamAchievementSummary = null;
 let selectedSteamGameSlug = null;
+let lastLeaderboardResponse = null;
 
 async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -649,6 +650,7 @@ function setupAchievementsModal() {
 }
 
 function renderLeaderboard(response) {
+  lastLeaderboardResponse = response;
   const list = document.getElementById("leaderboard-list");
   list.innerHTML = "";
 
@@ -671,12 +673,103 @@ function renderLeaderboard(response) {
     const meta = document.createElement("small");
     meta.textContent = `${entry.totalUnlocked}/${entry.totalAchievements} достижений • ${entry.progressPercent}% • ${formatSteamHours(entry.totalPlaytimeMinutes)}`;
     user.append(name, meta);
+    const side = document.createElement("div");
+    side.className = "leaderboard-row-side";
     const games = document.createElement("span");
     games.className = "leaderboard-games";
     games.textContent = `${entry.gamesCount} игр`;
-    row.append(rank, user, games);
+    const compareBtn = document.createElement("button");
+    compareBtn.type = "button";
+    compareBtn.className = "sections-btn";
+    compareBtn.textContent = "Сравнить";
+    compareBtn.addEventListener("click", () => openSelfCompare(entry));
+    side.append(games, compareBtn);
+    row.append(rank, user, side);
     list.appendChild(row);
   });
+}
+
+function normalizeGameKey(game) {
+  const bySlug = String(game?.slug || "").trim().toLowerCase();
+  const byApp = String(game?.appId || game?.steamAppId || "").trim().toLowerCase();
+  const byTitle = String(game?.title || game?.name || "").trim().toLowerCase();
+  return bySlug || byApp || byTitle;
+}
+
+function buildCompareRows(selfGames, otherGames) {
+  const selfMap = new Map(selfGames.map((game) => [normalizeGameKey(game), game]));
+  return otherGames.map((otherGame) => {
+    const key = normalizeGameKey(otherGame);
+    const selfGame = selfMap.get(key);
+    if (!selfGame) return null;
+    const selfUnlocked = Number(selfGame.unlockedCount || selfGame.unlocked || 0);
+    const selfTotal = Number(selfGame.totalCount || selfGame.total || 0);
+    const selfProgress = selfTotal ? Math.round((selfUnlocked * 100) / selfTotal) : Number(selfGame.progressPercent || 0);
+    const otherUnlocked = Number(otherGame.unlockedCount || otherGame.unlocked || 0);
+    const otherTotal = Number(otherGame.totalCount || otherGame.total || 0);
+    const otherProgress = otherTotal ? Math.round((otherUnlocked * 100) / otherTotal) : Number(otherGame.progressPercent || 0);
+    const title = selfGame.title || selfGame.name || otherGame.title || otherGame.name || "Игра";
+    return { title, selfUnlocked, selfTotal, selfProgress, otherUnlocked, otherTotal, otherProgress };
+  }).filter(Boolean);
+}
+
+function renderComparisonTable(entry, rows) {
+  const container = document.getElementById("leaderboard-compare");
+  const selfName = currentUser.displayName || "Вы";
+  const tableRows = rows.map((row) => `
+    <tr>
+      <td>${row.title}</td>
+      <td>${row.selfUnlocked}/${row.selfTotal}</td>
+      <td>${row.selfProgress}%</td>
+      <td>${row.otherUnlocked}/${row.otherTotal}</td>
+      <td>${row.otherProgress}%</td>
+    </tr>
+  `).join("");
+  container.innerHTML = `
+    <div class="compare-card">
+      <h3>Сравнение: ${selfName} vs ${entry.displayName}</h3>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Игра</th>
+            <th>${selfName}</th>
+            <th>%</th>
+            <th>${entry.displayName}</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+  `;
+  container.classList.remove("hidden");
+}
+
+async function openSelfCompare(entry) {
+  const container = document.getElementById("leaderboard-compare");
+  container.classList.remove("hidden");
+  container.innerHTML = `<div class="template-status">Готовим сравнение...</div>`;
+  await loadCurrentUser();
+  if (!currentUser.authenticated || !currentUser.steamId) {
+    container.innerHTML = `<div class="template-status compare-alert">Войдите через Steam, чтобы сравнить свои достижения.</div>`;
+    return;
+  }
+  if (!steamAchievementSummary?.games?.length) {
+    try {
+      steamAchievementSummary = await apiFetch("/api/steam/achievements");
+    } catch {
+      container.innerHTML = `<div class="template-status compare-alert">Не удалось загрузить ваши Steam-данные для сравнения.</div>`;
+      return;
+    }
+  }
+  const otherGames = entry.games || entry.gameStats || entry.sharedGames || [];
+  const selfGames = steamAchievementSummary.games || [];
+  const rows = buildCompareRows(selfGames, otherGames);
+  if (!rows.length) {
+    container.innerHTML = `<div class="template-status">Для пользователя ${entry.displayName} API пока не вернуло список игр для сравнения.</div>`;
+    return;
+  }
+  renderComparisonTable(entry, rows);
 }
 
 async function loadLeaderboard() {
@@ -707,6 +800,15 @@ function setupLeaderboardModal() {
   document.getElementById("leaderboard-modal-close-bg").addEventListener("click", closeModal);
   document.getElementById("leaderboard-scope").addEventListener("change", loadLeaderboard);
   document.getElementById("leaderboard-sort").addEventListener("change", loadLeaderboard);
+  document.getElementById("compare-self").addEventListener("click", async () => {
+    if (!lastLeaderboardResponse?.entries?.length) {
+      await loadLeaderboard();
+    }
+    const entries = lastLeaderboardResponse?.entries || [];
+    if (!entries.length) return;
+    const target = entries.find((entry) => entry.displayName !== currentUser.displayName) || entries[0];
+    await openSelfCompare(target);
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
   });
@@ -732,6 +834,23 @@ const supportCompanyDefs = [
   { id: "aa", name: "Поддержка ПВО", org: 0, soft: 4, hard: 8, icon: "S-AA" }
 ];
 
+const unitTypeById = {
+  infantry: "infantry",
+  artillery: "artillery",
+  motorized: "mobile",
+  mechanized: "mobile",
+  medium_tank: "armor",
+  aa_line: "aa",
+  at_line: "at",
+  eng: "support",
+  recon: "support",
+  sup_art: "artillery",
+  log: "support",
+  signal: "support",
+  maintenance: "support",
+  aa: "aa"
+};
+
 const divisionState = {
   lineSlots: Array(25).fill(null),
   supportSlots: Array(5).fill(null),
@@ -743,13 +862,13 @@ function renderPalette() {
   const battalionPalette = document.getElementById("battalion-palette");
   const supportPalette = document.getElementById("support-palette");
   battalionPalette.innerHTML = lineBattalionDefs.map((unit) => `
-    <button class="palette-item ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}">
+    <button class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}">
       ${unit.icon} • ${unit.name}
       <small>W:${unit.width} ORG:${unit.org} SA:${unit.soft} HA:${unit.hard}</small>
     </button>
   `).join("");
   supportPalette.innerHTML = supportCompanyDefs.map((unit) => `
-    <button class="palette-item ${divisionState.selectedSupport === unit.id ? "active" : ""}" data-pick-support="${unit.id}">
+    <button class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedSupport === unit.id ? "active" : ""}" data-pick-support="${unit.id}">
       ${unit.icon} • ${unit.name}
     </button>
   `).join("");
@@ -772,11 +891,13 @@ function renderDivisionGrid() {
   const supportGrid = document.getElementById("support-grid");
   grid.innerHTML = divisionState.lineSlots.map((unitId, index) => {
     const unit = unitId ? lineBattalionDefs.find((def) => def.id === unitId) : null;
-    return `<button class="division-slot ${unit ? "" : "empty"}" data-line-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `${unit.icon}<br>${unit.name}` : "Пусто"}</button>`;
+    const unitType = unit ? unitTypeById[unit.id] || "support" : "";
+    return `<button class="division-slot ${unit ? `unit-type-${unitType}` : "empty"}" data-line-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `<span>${unit.icon}</span><small>${unit.name}</small>` : "Пусто"}</button>`;
   }).join("");
   supportGrid.innerHTML = divisionState.supportSlots.map((unitId, index) => {
     const unit = unitId ? supportCompanyDefs.find((def) => def.id === unitId) : null;
-    return `<button class="support-slot ${unit ? "" : "empty"}" data-support-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `${unit.icon}<br>${unit.name}` : "Пусто"}</button>`;
+    const unitType = unit ? unitTypeById[unit.id] || "support" : "";
+    return `<button class="support-slot ${unit ? `unit-type-${unitType}` : "empty"}" data-support-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `<span>${unit.icon}</span><small>${unit.name}</small>` : "Пусто"}</button>`;
   }).join("");
   grid.querySelectorAll("[data-line-slot]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -806,22 +927,47 @@ function calculateDivisionStats() {
     hard: Math.round(lineUnits.reduce((sum, unit) => sum + unit.hard, 0) + supportUnits.reduce((sum, unit) => sum + unit.hard, 0)),
     battalionCount: lineUnits.length,
     supportCount: supportUnits.length,
-    xpCost: lineUnits.length * 5 + supportUnits.length * 10
+    xpCost: lineUnits.length * 5 + supportUnits.length * 10,
+    lineFillPercent: Math.round((lineUnits.length / 25) * 100),
+    supportFillPercent: Math.round((supportUnits.length / 5) * 100)
   };
+}
+
+function statBarMarkup(label, value, max, tone) {
+  const percent = Math.max(0, Math.min(100, Math.round((Number(value || 0) * 100) / Math.max(1, max))));
+  return `
+    <div class="division-stat-row">
+      <div class="division-stat-head">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>
+      <div class="division-stat-bar tone-${tone}">
+        <i style="width:${percent}%"></i>
+      </div>
+    </div>
+  `;
 }
 
 function renderDivisionStats() {
   const stats = calculateDivisionStats();
   document.getElementById("division-stats").innerHTML = `
-    <div>Линейных батальонов: <strong>${stats.battalionCount}/25</strong></div>
-    <div>Рот поддержки: <strong>${stats.supportCount}/5</strong></div>
-    <div>Боевая ширина: <strong>${stats.width}</strong></div>
-    <div>Организация: <strong>${stats.org}</strong></div>
-    <div>HP: <strong>${stats.hp}</strong></div>
-    <div>Soft Attack: <strong>${stats.soft}</strong></div>
-    <div>Hard Attack: <strong>${stats.hard}</strong></div>
-    <div>Стоимость опыта армии: <strong>${stats.xpCost}</strong></div>
-    <div style="margin-top:6px;color:#8ea1bc;">Подсказка: выбери юнит справа и кликай по слотам, чтобы заполнять сетку.</div>
+    <div class="division-fill-grid">
+      <div>
+        <div class="division-stat-head"><span>Линейных батальонов</span><strong>${stats.battalionCount}/25</strong></div>
+        <div class="division-stat-bar tone-fill"><i style="width:${stats.lineFillPercent}%"></i></div>
+      </div>
+      <div>
+        <div class="division-stat-head"><span>Рот поддержки</span><strong>${stats.supportCount}/5</strong></div>
+        <div class="division-stat-bar tone-fill"><i style="width:${stats.supportFillPercent}%"></i></div>
+      </div>
+    </div>
+    ${statBarMarkup("Organization", stats.org, 80, "org")}
+    ${statBarMarkup("HP", stats.hp, 650, "hp")}
+    ${statBarMarkup("Soft Attack", stats.soft, 360, "soft")}
+    ${statBarMarkup("Hard Attack", stats.hard, 260, "hard")}
+    ${statBarMarkup("Combat Width", stats.width, 50, "width")}
+    ${statBarMarkup("Army XP Cost", stats.xpCost, 200, "xp")}
+    <div class="division-help">Подсказка: выберите юнит справа и кликайте по слотам, чтобы заполнять шаблон.</div>
   `;
 }
 
@@ -941,6 +1087,14 @@ function renderCurrentUser() {
   document.getElementById("steam-login").classList.toggle("hidden", currentUser.authenticated);
   document.getElementById("dev-login").classList.toggle("hidden", currentUser.authenticated);
   document.getElementById("logout").classList.toggle("hidden", !currentUser.authenticated);
+  const dot = document.getElementById("user-status-dot");
+  const label = document.getElementById("user-status-label");
+  const mode = currentUser.authenticated
+    ? (currentUser.steamId ? "steam" : "dev")
+    : "guest";
+  dot.dataset.status = mode;
+  dot.title = mode === "steam" ? "Steam подключен" : mode === "dev" ? "Dev вход" : "Гость";
+  label.textContent = mode === "steam" ? "Онлайн (Steam)" : mode === "dev" ? "Онлайн (Dev)" : "Оффлайн";
 }
 
 async function loadCurrentUser() {

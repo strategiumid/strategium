@@ -4,6 +4,10 @@
   --line-2: #2f3b4d;
   --text: #e9eef8;
   --muted: #8b96a8;
+  --gold: #c2a262;
+  --green-achieved: #6bbd7e;
+  --red-alert: #c25a5a;
+  --blue-link: #9fb7ff;
 }
 
 * { box-sizing: border-box; }
@@ -70,7 +74,7 @@ body::before {
 .sections-list a,
 .news-source a,
 .vk-item a {
-  color: #c3cedd;
+  color: var(--blue-link);
   text-decoration: none;
 }
 
@@ -94,6 +98,24 @@ body::before {
   font-size: 0.68rem;
   padding: 5px 8px;
   cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.sections-btn:hover,
+.auth-btn:hover,
+.template-item button:hover {
+  border-color: var(--gold);
+}
+
+.sections-btn:active,
+.auth-btn:active,
+.template-item button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.sections-btn.primary {
+  border-color: var(--gold);
+  color: var(--gold);
 }
 
 .steam-btn {
@@ -141,12 +163,41 @@ body::before {
   color: #cfd8e7;
 }
 
+.steam-user {
+  color: var(--gold);
+}
+
 .dot {
   width: 7px;
   height: 7px;
   border-radius: 999px;
   border: 1px solid #3b4659;
   background: #0d121a;
+  box-shadow: 0 0 0 transparent;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dot[data-status="steam"] {
+  background: var(--green-achieved);
+  border-color: #4f9761;
+  box-shadow: 0 0 10px rgba(107, 189, 126, 0.7);
+}
+
+.dot[data-status="dev"] {
+  background: var(--blue-link);
+  border-color: #6f8ed9;
+  box-shadow: 0 0 8px rgba(159, 183, 255, 0.58);
+}
+
+.dot[data-status="guest"] {
+  background: var(--red-alert);
+  border-color: #8f4545;
+  box-shadow: 0 0 8px rgba(194, 90, 90, 0.5);
+}
+
+.user-status-label {
+  font-size: 0.64rem;
+  color: var(--muted);
 }
 
 .page { padding-top: 42px; }
@@ -177,6 +228,7 @@ body::before {
   margin: 6px 0 0;
   font-size: 2rem;
   font-weight: 500;
+  color: var(--gold);
 }
 
 .hero-search {
@@ -218,7 +270,7 @@ body::before {
 .division-layout h3 {
   margin: 0;
   text-transform: uppercase;
-  color: #a7b3c6;
+  color: var(--gold);
 }
 
 .news-head h2 { font-size: 0.82rem; }
@@ -255,7 +307,7 @@ body::before {
 
 .news-source { margin-top: 6px; font-size: 0.66rem; }
 .news-source a,
-.vk-item a { color: #9fb7ff; }
+.vk-item a { color: var(--blue-link); }
 .news-controls { justify-self: end; }
 .news-expand-icon {
   font-size: 0.78rem;
@@ -301,6 +353,18 @@ body::before {
   background: #0d131d;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   padding: 12px;
+  animation: modal-pop 0.16s ease-out;
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .achievements-modal {
@@ -326,7 +390,7 @@ body::before {
   gap: 10px;
 }
 
-.modal-header h2 { font-size: 0.9rem; color: #c4d1e4; }
+.modal-header h2 { font-size: 0.9rem; color: var(--gold); }
 .modal-close {
   border: 1px solid #36455e;
   background: #111927;
@@ -387,7 +451,7 @@ body::before {
 }
 
 .steam-game-item.active {
-  border-color: #6b7fa3;
+  border-color: var(--gold);
   background: #111a28;
 }
 
@@ -522,7 +586,7 @@ body::before {
 }
 
 .leaderboard-row strong {
-  color: #9fb7ff;
+  color: var(--gold);
   font-size: 0.78rem;
 }
 
@@ -540,6 +604,46 @@ body::before {
 .leaderboard-games {
   color: #93a5bd;
   font-size: 0.66rem;
+}
+
+.leaderboard-row-side {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.leaderboard-compare {
+  margin-top: 10px;
+  border-top: 1px solid #223044;
+  padding-top: 10px;
+}
+
+.compare-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: var(--gold);
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.68rem;
+}
+
+.compare-table th,
+.compare-table td {
+  border: 1px solid #213045;
+  padding: 6px;
+  text-align: left;
+}
+
+.compare-table th {
+  color: #cfdae9;
+  background: #111a28;
+}
+
+.compare-alert {
+  color: var(--red-alert);
 }
 
 .settings-card {
@@ -833,7 +937,7 @@ body::before {
 
 .division-slot,
 .support-slot {
-  min-height: 54px;
+  min-height: 62px;
   border: 1px solid #31445c;
   background: #0d141f;
   color: #dce5f4;
@@ -842,6 +946,20 @@ body::before {
   padding: 4px;
   text-align: center;
   cursor: pointer;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+
+.division-slot span,
+.support-slot span {
+  font-size: 0.72rem;
+}
+
+.division-slot small,
+.support-slot small {
+  color: #b8c6da;
+  font-size: 0.56rem;
 }
 
 .division-slot:hover,
@@ -874,8 +992,37 @@ body::before {
 }
 
 .palette-item.active {
-  border-color: #7e9fd1;
+  border-color: var(--gold);
   background: #172539;
+  box-shadow: inset 0 0 0 1px rgba(194, 162, 98, 0.25);
+}
+
+.unit-type-infantry {
+  border-left: 2px solid #8fa8d4;
+}
+
+.unit-type-artillery {
+  border-left: 2px solid #d08a61;
+}
+
+.unit-type-mobile {
+  border-left: 2px solid #79b8a7;
+}
+
+.unit-type-armor {
+  border-left: 2px solid #c2a262;
+}
+
+.unit-type-aa {
+  border-left: 2px solid #6eb3d8;
+}
+
+.unit-type-at {
+  border-left: 2px solid #c25a5a;
+}
+
+.unit-type-support {
+  border-left: 2px solid #7d8ca6;
 }
 
 .template-status { min-height: 18px; }
@@ -903,6 +1050,80 @@ body::before {
   padding: 8px;
   font-size: 0.7rem;
   line-height: 1.5;
+  display: grid;
+  gap: 6px;
+}
+
+.division-fill-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.division-stat-row {
+  display: grid;
+  gap: 4px;
+}
+
+.division-stat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.64rem;
+}
+
+.division-stat-head span {
+  color: #9db0ca;
+}
+
+.division-stat-head strong {
+  color: #e6edf8;
+}
+
+.division-stat-bar {
+  border: 1px solid #2a3a51;
+  height: 8px;
+  background: #060a10;
+}
+
+.division-stat-bar i {
+  display: block;
+  height: 100%;
+}
+
+.tone-fill i {
+  background: linear-gradient(90deg, #4e607f, #8ea6d1);
+}
+
+.tone-org i {
+  background: linear-gradient(90deg, #5d88d4, #9fb7ff);
+}
+
+.tone-hp i {
+  background: linear-gradient(90deg, #548d9f, #78c3d9);
+}
+
+.tone-soft i {
+  background: linear-gradient(90deg, #6fa4d8, #a6d0ff);
+}
+
+.tone-hard i {
+  background: linear-gradient(90deg, #c97777, #d9a0a0);
+}
+
+.tone-width i {
+  background: linear-gradient(90deg, #8e86cf, #b3adf0);
+}
+
+.tone-xp i {
+  background: linear-gradient(90deg, #9d8452, #c2a262);
+}
+
+.division-help {
+  margin-top: 4px;
+  color: #8ea1bc;
+  font-size: 0.64rem;
 }
 
 @media (max-width: 920px) {
