@@ -38,6 +38,16 @@ const mockFactions = [
   { id: "3", name: "Северный Альянс", tag: "NTH", totalAchievements: 1186, avgCompletion: 55, uniqueGames: 15, memberCount: 26, rank: 3, progress: 65 }
 ];
 const constructorsCatalog = {
+  hoi4: {
+    title: "Hearts of Iron IV",
+    subtitle: "Конструктор дивизий и боевых шаблонов",
+    modules: [
+      "Полный конструктор дивизий (активный модуль)",
+      "Валидация боевой ширины и состава",
+      "Сравнение с AI-шаблонами и мета-пресеты",
+      "Экспорт кода шаблона + IC/XP расчет"
+    ]
+  },
   ck3: {
     title: "Crusader Kings III",
     subtitle: "Династический планировщик",
@@ -81,6 +91,7 @@ const constructorsCatalog = {
     ]
   }
 };
+let constructorsActiveTab = "hoi4";
 
 async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -969,7 +980,37 @@ function setupFactionsModal() {
   });
 }
 
-function renderConstructorsHub(activeKey = "ck3") {
+function renderConstructorModuleDetail(gameKey, moduleIndex) {
+  const content = document.getElementById("constructors-content");
+  const game = constructorsCatalog[gameKey];
+  const moduleTitle = game.modules[moduleIndex];
+  const isHoi4Live = gameKey === "hoi4" && moduleIndex === 0;
+  content.innerHTML = `
+    <article class="constructor-card">
+      <header>
+        <h3>${game.title}</h3>
+        <small>${moduleTitle}</small>
+      </header>
+      <div class="constructor-module-detail">
+        <p>Модуль открыт в рабочем режиме прототипа.</p>
+        <p>Следующий шаг — углубление формул, данных и интеграция с backend.</p>
+        <div class="template-actions">
+          <button type="button" class="sections-btn" id="constructors-back">Назад к модулям</button>
+          ${isHoi4Live ? `<button type="button" class="sections-btn primary" id="open-hoi4-live">Открыть конструктор HOI4</button>` : ""}
+        </div>
+      </div>
+    </article>
+  `;
+  document.getElementById("constructors-back")?.addEventListener("click", () => renderConstructorsHub(gameKey));
+  document.getElementById("open-hoi4-live")?.addEventListener("click", () => {
+    document.getElementById("constructors-modal")?.classList.add("hidden");
+    document.getElementById("tools-modal")?.classList.remove("hidden");
+    loadTemplates();
+  });
+}
+
+function renderConstructorsHub(activeKey = "hoi4") {
+  constructorsActiveTab = activeKey;
   const tabs = document.getElementById("constructors-tabs");
   const content = document.getElementById("constructors-content");
   tabs.innerHTML = Object.entries(constructorsCatalog).map(([key, entry]) => `
@@ -987,7 +1028,7 @@ function renderConstructorsHub(activeKey = "ck3") {
           <div class="constructor-module">
             <strong>Модуль ${idx + 1}</strong>
             <p>${module}</p>
-            <button type="button" class="sections-btn">Открыть прототип</button>
+            <button type="button" class="sections-btn" data-open-constructor-module="${activeKey}" data-module-index="${idx}">Открыть прототип</button>
           </div>
         `).join("")}
       </div>
@@ -997,6 +1038,11 @@ function renderConstructorsHub(activeKey = "ck3") {
   tabs.querySelectorAll("[data-constructor-tab]").forEach((button) => {
     button.addEventListener("click", () => renderConstructorsHub(button.dataset.constructorTab));
   });
+  content.querySelectorAll("[data-open-constructor-module]").forEach((button) => {
+    button.addEventListener("click", () => {
+      renderConstructorModuleDetail(button.dataset.openConstructorModule, Number(button.dataset.moduleIndex || 0));
+    });
+  });
 }
 
 function setupConstructorsModal() {
@@ -1004,7 +1050,7 @@ function setupConstructorsModal() {
   const openModal = (event) => {
     event?.preventDefault();
     modal.classList.remove("hidden");
-    renderConstructorsHub("ck3");
+    renderConstructorsHub(constructorsActiveTab);
   };
   const closeModal = () => modal.classList.add("hidden");
   document.querySelectorAll("[data-open-constructors]").forEach((btn) => btn.addEventListener("click", openModal));

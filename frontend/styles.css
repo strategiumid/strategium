@@ -1468,6 +1468,20 @@ body::before {
   color: #97a9c4;
 }
 
+.constructor-module-detail {
+  margin-top: 10px;
+  border: 1px solid #223349;
+  background: rgba(10, 15, 24, 0.72);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.constructor-module-detail p {
+  margin: 0;
+  color: #9db0ca;
+}
+
 .mobile-bottom-nav {
   display: none;
 }
