@@ -32,6 +32,55 @@ let activeTemplateId = null;
 let steamAchievementSummary = null;
 let selectedSteamGameSlug = null;
 let lastLeaderboardResponse = null;
+const mockFactions = [
+  { id: "1", name: "Стальной Легион", tag: "STL", totalAchievements: 1480, avgCompletion: 62, uniqueGames: 19, memberCount: 34, rank: 1, progress: 84 },
+  { id: "2", name: "Орден Маршалов", tag: "ORD", totalAchievements: 1325, avgCompletion: 58, uniqueGames: 16, memberCount: 29, rank: 2, progress: 73 },
+  { id: "3", name: "Северный Альянс", tag: "NTH", totalAchievements: 1186, avgCompletion: 55, uniqueGames: 15, memberCount: 26, rank: 3, progress: 65 }
+];
+const constructorsCatalog = {
+  ck3: {
+    title: "Crusader Kings III",
+    subtitle: "Династический планировщик",
+    modules: [
+      "Конструктор черт характера (3x3, конфликты, очки престижа/благочестия)",
+      "Планировщик lifestyle-перков с маршрутом и ETA",
+      "Симулятор брачного союза и наследования",
+      "Калькулятор доменов с сравнением конфигураций",
+      "Генератор гербов (CoA) с экспортом"
+    ]
+  },
+  stellaris: {
+    title: "Stellaris",
+    subtitle: "Конструктор Империи и Кораблей",
+    modules: [
+      "Empire Builder с этикой, происхождением, гражданскими моделями и расой",
+      "Ship Designer: секции, DPS, энергия, сплавы, 1v1-симулятор",
+      "Планировщик традиций и перков вознесения",
+      "Генератор названий под namelist-стили"
+    ]
+  },
+  eu4: {
+    title: "Europa Universalis IV",
+    subtitle: "Мастер-планировщик кампании",
+    modules: [
+      "Планировщик групп идей и политик",
+      "Симулятор развития провинций и оптимизатор монархических очков",
+      "Калькулятор торговли и маршрутов купцов",
+      "Конструктор армии по эпохам и воентеху",
+      "Mission Tree planner и дипломатический анализатор"
+    ]
+  },
+  vic3: {
+    title: "Victoria 3",
+    subtitle: "Планировщик экономики и общества",
+    modules: [
+      "Конструктор производственных цепочек и граф товаров",
+      "Редактор законов и доступности реформ",
+      "Калькулятор населения и миграции",
+      "Политический компас и баланс интерес-групп"
+    ]
+  }
+};
 
 async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -685,6 +734,31 @@ function renderLeaderboard(response) {
   lastLeaderboardResponse = response;
   const list = document.getElementById("leaderboard-list");
   list.innerHTML = "";
+  const mode = document.getElementById("leaderboard-mode")?.value || "personal";
+
+  if (mode === "faction") {
+    mockFactions.forEach((faction) => {
+      const row = document.createElement("article");
+      row.className = "leaderboard-row";
+      row.innerHTML = `
+        <strong>#<span data-counter="${faction.rank}">0</span></strong>
+        <div>
+          <span>[${faction.tag}] ${faction.name}</span>
+          <small><span data-counter="${faction.totalAchievements}">0</span> достижений • <span data-counter="${faction.avgCompletion}">0</span>% средний прогресс • <span data-counter="${faction.uniqueGames}">0</span> тайтлов</small>
+        </div>
+        <div class="leaderboard-row-side">
+          <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> участников</span>
+          <button type="button" class="sections-btn" data-open-factions>Открыть</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+    runAnimatedCounters(list);
+    list.querySelectorAll("[data-open-factions]").forEach((btn) => btn.addEventListener("click", () => {
+      document.getElementById("factions-modal")?.classList.remove("hidden");
+    }));
+    return;
+  }
 
   if (!response.entries?.length) {
     const empty = document.createElement("p");
@@ -701,7 +775,7 @@ function renderLeaderboard(response) {
     rank.innerHTML = `#<span data-counter="${entry.rank}">0</span>`;
     const user = document.createElement("div");
     const name = document.createElement("span");
-    name.textContent = entry.displayName;
+    name.textContent = `${entry.factionTag ? `[${entry.factionTag}] ` : ""}${entry.displayName}`;
     const meta = document.createElement("small");
     meta.innerHTML = `<span data-counter="${entry.totalUnlocked}">0</span>/<span data-counter="${entry.totalAchievements}">0</span> достижений • <span data-counter="${entry.progressPercent}">0</span>% • ${formatSteamHours(entry.totalPlaytimeMinutes)}`;
     user.append(name, meta);
@@ -812,8 +886,12 @@ async function loadLeaderboard() {
   status.textContent = "Загружаем лидерборд...";
   renderSkeleton(document.getElementById("leaderboard-list"), 6, true);
   try {
-    const response = await apiFetch(`/api/steam/leaderboard?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
-    renderLeaderboard(response);
+    if ((document.getElementById("leaderboard-mode")?.value || "personal") === "faction") {
+      renderLeaderboard({ entries: [] });
+    } else {
+      const response = await apiFetch(`/api/steam/leaderboard?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
+      renderLeaderboard(response);
+    }
     status.textContent = "";
   } catch {
     status.textContent = "Не удалось загрузить лидерборд.";
@@ -831,6 +909,7 @@ function setupLeaderboardModal() {
   document.querySelectorAll("[data-open-leaderboard]").forEach((btn) => btn.addEventListener("click", openModal));
   document.getElementById("leaderboard-modal-close").addEventListener("click", closeModal);
   document.getElementById("leaderboard-modal-close-bg").addEventListener("click", closeModal);
+  document.getElementById("leaderboard-mode").addEventListener("change", loadLeaderboard);
   document.getElementById("leaderboard-scope").addEventListener("change", loadLeaderboard);
   document.getElementById("leaderboard-sort").addEventListener("change", loadLeaderboard);
   document.getElementById("compare-self").addEventListener("click", async () => {
@@ -845,6 +924,92 @@ function setupLeaderboardModal() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
   });
+}
+
+function renderFactionsList() {
+  const list = document.getElementById("factions-list");
+  const theme = document.getElementById("faction-theme").value;
+  list.innerHTML = "";
+  const cards = [...mockFactions].map((faction) => {
+    const ratingScore = Math.round((faction.totalAchievements * 0.5) + (faction.avgCompletion * 0.3) + (faction.uniqueGames * 0.2));
+    const row = document.createElement("article");
+    row.className = `leaderboard-row faction-theme-${theme}`;
+    row.innerHTML = `
+      <strong>#<span data-counter="${faction.rank}">0</span></strong>
+      <div>
+        <span>[${faction.tag}] ${faction.name}</span>
+        <small>50/30/20 score: <span data-counter="${ratingScore}">0</span> • <span data-counter="${faction.totalAchievements}">0</span> достижений • <span data-counter="${faction.uniqueGames}">0</span> игр</small>
+      </div>
+      <div class="leaderboard-row-side">
+        <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> мест</span>
+        <button type="button" class="sections-btn">Подать заявку</button>
+      </div>
+    `;
+    return row;
+  });
+  cards.forEach((card) => list.appendChild(card));
+  runAnimatedCounters(list);
+}
+
+function setupFactionsModal() {
+  const modal = document.getElementById("factions-modal");
+  const openModal = (event) => {
+    event?.preventDefault();
+    modal.classList.remove("hidden");
+    renderFactionsList();
+    document.getElementById("factions-status").textContent = "Фракции ранжируются еженедельно. Anti-abuse: 24ч после выхода, 72ч после исключения.";
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  document.querySelectorAll("[data-open-factions]").forEach((btn) => btn.addEventListener("click", openModal));
+  document.getElementById("factions-modal-close").addEventListener("click", closeModal);
+  document.getElementById("factions-modal-close-bg").addEventListener("click", closeModal);
+  document.getElementById("faction-theme").addEventListener("change", renderFactionsList);
+  document.getElementById("create-faction").addEventListener("click", () => {
+    document.getElementById("factions-status").textContent = "Создание фракции: лидер/офицеры/заявки/видимость и роли будут синхронизированы через backend.";
+  });
+}
+
+function renderConstructorsHub(activeKey = "ck3") {
+  const tabs = document.getElementById("constructors-tabs");
+  const content = document.getElementById("constructors-content");
+  tabs.innerHTML = Object.entries(constructorsCatalog).map(([key, entry]) => `
+    <button type="button" class="sections-btn ${key === activeKey ? "primary" : ""}" data-constructor-tab="${key}">${entry.title}</button>
+  `).join("");
+  const active = constructorsCatalog[activeKey];
+  content.innerHTML = `
+    <article class="constructor-card">
+      <header>
+        <h3>${active.title}</h3>
+        <small>${active.subtitle}</small>
+      </header>
+      <div class="constructor-grid">
+        ${active.modules.map((module, idx) => `
+          <div class="constructor-module">
+            <strong>Модуль ${idx + 1}</strong>
+            <p>${module}</p>
+            <button type="button" class="sections-btn">Открыть прототип</button>
+          </div>
+        `).join("")}
+      </div>
+      <div class="template-status">Каркас модулей добавлен. Можно последовательно углублять каждый конструктор до игрового уровня.</div>
+    </article>
+  `;
+  tabs.querySelectorAll("[data-constructor-tab]").forEach((button) => {
+    button.addEventListener("click", () => renderConstructorsHub(button.dataset.constructorTab));
+  });
+}
+
+function setupConstructorsModal() {
+  const modal = document.getElementById("constructors-modal");
+  const openModal = (event) => {
+    event?.preventDefault();
+    modal.classList.remove("hidden");
+    renderConstructorsHub("ck3");
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  document.querySelectorAll("[data-open-constructors]").forEach((btn) => btn.addEventListener("click", openModal));
+  document.getElementById("constructors-modal-close").addEventListener("click", closeModal);
+  document.getElementById("constructors-modal-close-bg").addEventListener("click", closeModal);
 }
 
 const lineBattalionDefs = [
@@ -891,7 +1056,13 @@ const divisionState = {
   selectedSupport: null,
   previewUnitId: null,
   previewKind: null,
-  battalionTechLevel: 0
+  techLevels: {
+    infantry: 0,
+    artillery: 0,
+    armor: 0,
+    support: 0
+  },
+  doctrineLevel: 0
 };
 
 const optimalWidths = new Set([20, 21, 27, 42, 45]);
@@ -934,14 +1105,19 @@ function researchMultiplier(level) {
   return 1 + (Number(level || 0) * 0.06);
 }
 
-function applyLineResearch(unit) {
-  const mul = researchMultiplier(divisionState.battalionTechLevel);
+function applyResearchByType(unit, isSupport = false) {
+  if (!unit) return unit;
+  const type = isSupport ? "support" : (unitTypeById[unit.id] || "support");
+  const techGroup = type === "mobile" ? "infantry" : type;
+  const techLevel = Number(divisionState.techLevels[techGroup] || 0);
+  const techMul = researchMultiplier(techLevel);
+  const doctrineMul = 1 + (Number(divisionState.doctrineLevel || 0) * 0.04);
   return {
     ...unit,
-    hp: Math.round(unit.hp * mul),
-    org: Math.round(unit.org * mul),
-    soft: Math.round(unit.soft * mul),
-    hard: Math.round(unit.hard * mul)
+    hp: Math.round(unit.hp * techMul),
+    org: Math.round(unit.org * doctrineMul),
+    soft: Math.round(unit.soft * techMul * doctrineMul),
+    hard: Math.round(unit.hard * techMul * doctrineMul)
   };
 }
 
@@ -951,7 +1127,7 @@ function renderPalette() {
   battalionPalette.innerHTML = lineBattalionDefs.map((unit) => `
     <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}" title="${unit.role}">
       ${unitIconSvg(unit.icon)} ${unit.name}
-      <small>${(() => { const scaled = applyLineResearch(unit); return `W:${scaled.width} ORG:${scaled.org} SA:${scaled.soft} HA:${scaled.hard}`; })()}</small>
+      <small>${(() => { const scaled = applyResearchByType(unit, false); return `W:${scaled.width} ORG:${scaled.org} SA:${scaled.soft} HA:${scaled.hard}`; })()}</small>
     </button>
   `).join("");
   supportPalette.innerHTML = supportCompanyDefs.map((unit) => `
@@ -1039,13 +1215,14 @@ function renderDivisionGrid() {
     const unit = unitId ? lineBattalionDefs.find((def) => def.id === unitId) : null;
     const unitType = unit ? unitTypeById[unit.id] || "support" : "";
     const previewClass = !unit && divisionState.previewKind === "line" && divisionState.previewUnitId ? "preview-target" : "";
-    return `<button draggable="${unit ? "true" : "false"}" class="division-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-line-slot="${index}" title="${unit ? `${unit.name} (ур. ${divisionState.battalionTechLevel})` : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name} • L${divisionState.battalionTechLevel}</small>` : "Пусто"}</button>`;
+    const level = divisionState.techLevels[unitType === "mobile" ? "infantry" : unitType] || 0;
+    return `<button draggable="${unit ? "true" : "false"}" class="division-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-line-slot="${index}" title="${unit ? `${unit.name} (ур. ${level})` : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name} • L${level}</small>` : "Пусто"}</button>`;
   }).join("");
   supportGrid.innerHTML = divisionState.supportSlots.map((unitId, index) => {
     const unit = unitId ? supportCompanyDefs.find((def) => def.id === unitId) : null;
     const unitType = unit ? unitTypeById[unit.id] || "support" : "";
     const previewClass = !unit && divisionState.previewKind === "support" && divisionState.previewUnitId ? "preview-target" : "";
-    return `<button draggable="${unit ? "true" : "false"}" class="support-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-support-slot="${index}" title="${unit ? unit.name : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name}</small>` : "Пусто"}</button>`;
+    return `<button draggable="${unit ? "true" : "false"}" class="support-slot ${unit ? `unit-type-${unitType}` : "empty"} ${previewClass}" data-support-slot="${index}" title="${unit ? `${unit.name} (ур. ${divisionState.techLevels.support || 0})` : "Пустой слот"}">${unit ? `${unitIconSvg(unit.icon)}<small>${unit.name} • L${divisionState.techLevels.support || 0}</small>` : "Пусто"}</button>`;
   }).join("");
   grid.querySelectorAll("[data-line-slot]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1114,8 +1291,8 @@ function renderDivisionGrid() {
 }
 
 function calculateDivisionStats() {
-  const lineUnits = divisionState.lineSlots.filter(Boolean).map((id) => applyLineResearch(lineBattalionDefs.find((unit) => unit.id === id)));
-  const supportUnits = divisionState.supportSlots.filter(Boolean).map((id) => supportCompanyDefs.find((unit) => unit.id === id));
+  const lineUnits = divisionState.lineSlots.filter(Boolean).map((id) => applyResearchByType(lineBattalionDefs.find((unit) => unit.id === id), false));
+  const supportUnits = divisionState.supportSlots.filter(Boolean).map((id) => applyResearchByType(supportCompanyDefs.find((unit) => unit.id === id), true));
   const orgBase = lineUnits.length ? lineUnits.reduce((sum, unit) => sum + unit.org, 0) / lineUnits.length : 0;
   const equipment = lineUnits.concat(supportUnits).reduce((acc, unit) => {
     Object.entries(unit.equipment || {}).forEach(([key, value]) => {
@@ -1138,6 +1315,7 @@ function calculateDivisionStats() {
     battalionCount: lineUnits.length,
     supportCount: supportUnits.length,
     xpCost: lineUnits.length * 5 + supportUnits.length * 10,
+    icCost: Math.round((equipment.infantry * 0.55) + (equipment.artillery * 3.8) + (equipment.support * 2.2)),
     lineFillPercent: Math.round((lineUnits.length / 25) * 100),
     supportFillPercent: Math.round((supportUnits.length / 5) * 100),
     equipment,
@@ -1208,8 +1386,8 @@ function getPreviewDelta() {
     supportSlots: before.supportSlots
   };
   const calc = (state) => {
-    const lineUnits = state.lineSlots.filter(Boolean).map((id) => lineBattalionDefs.find((unit) => unit.id === id));
-    const supportUnits = state.supportSlots.filter(Boolean).map((id) => supportCompanyDefs.find((unit) => unit.id === id));
+    const lineUnits = state.lineSlots.filter(Boolean).map((id) => applyResearchByType(lineBattalionDefs.find((unit) => unit.id === id), false));
+    const supportUnits = state.supportSlots.filter(Boolean).map((id) => applyResearchByType(supportCompanyDefs.find((unit) => unit.id === id), true));
     const orgBase = lineUnits.length ? lineUnits.reduce((sum, unit) => sum + unit.org, 0) / lineUnits.length : 0;
     return {
       org: Math.round(orgBase + supportUnits.reduce((sum, unit) => sum + unit.org, 0)),
@@ -1304,6 +1482,7 @@ function renderDivisionStats() {
     ${statBarMarkup("Hard Attack", stats.hard, 260, "hard")}
     ${statBarMarkup("Combat Width", stats.width, 50, "width")}
     ${statBarMarkup("Army XP Cost", stats.xpCost, 200, "xp")}
+    ${statBarMarkup("Industrial Cost (IC)", stats.icCost, 1800, "xp")}
     <div class="division-resource-grid">
       <div>Infantry Eq.: <strong>${stats.equipment.infantry}</strong></div>
       <div>Artillery: <strong>${stats.equipment.artillery}</strong></div>
@@ -1418,7 +1597,8 @@ async function saveDivisionTemplate() {
 function serializeDivisionTemplate() {
   const line = divisionState.lineSlots.map((slot) => slot || "__").join("-");
   const support = divisionState.supportSlots.map((slot) => slot || "__").join("-");
-  return `STRAT_DIV|name=${encodeURIComponent(document.getElementById("template-name").value.trim() || "Новый шаблон")}|tech=${divisionState.battalionTechLevel}|line=${line}|support=${support}`;
+  const tech = `inf:${divisionState.techLevels.infantry},art:${divisionState.techLevels.artillery},arm:${divisionState.techLevels.armor},sup:${divisionState.techLevels.support},doc:${divisionState.doctrineLevel}`;
+  return `STRAT_DIV|name=${encodeURIComponent(document.getElementById("template-name").value.trim() || "Новый шаблон")}|tech=${tech}|line=${line}|support=${support}`;
 }
 
 async function copyDivisionCode() {
@@ -1464,11 +1644,31 @@ function setupToolsModal() {
   document.getElementById("new-division").addEventListener("click", resetDivisionTemplate);
   document.getElementById("save-division").addEventListener("click", saveDivisionTemplate);
   document.getElementById("copy-division-code").addEventListener("click", copyDivisionCode);
-  document.getElementById("battalion-tech-level").addEventListener("change", (event) => {
-    divisionState.battalionTechLevel = Number(event.target.value || 0);
-    renderPalette();
-    renderDivisionGrid();
-    renderDivisionStats();
+  const sliderConfig = [
+    ["tech-infantry", "tech-infantry-value", "infantry"],
+    ["tech-artillery", "tech-artillery-value", "artillery"],
+    ["tech-armor", "tech-armor-value", "armor"],
+    ["tech-support", "tech-support-value", "support"],
+    ["doctrine-level", "doctrine-level-value", "doctrine"]
+  ];
+  sliderConfig.forEach(([inputId, valueId, key]) => {
+    const input = document.getElementById(inputId);
+    const value = document.getElementById(valueId);
+    if (!input || !value) return;
+    const applyValue = () => {
+      const level = Number(input.value || 0);
+      value.textContent = `${level}`;
+      if (key === "doctrine") {
+        divisionState.doctrineLevel = level;
+      } else {
+        divisionState.techLevels[key] = level;
+      }
+      renderPalette();
+      renderDivisionGrid();
+      renderDivisionStats();
+    };
+    input.addEventListener("input", applyValue);
+    applyValue();
   });
   document.querySelectorAll("[data-load-meta]").forEach((button) => {
     button.addEventListener("click", () => loadMetaTemplate(button.dataset.loadMeta));
@@ -1536,6 +1736,8 @@ setupProfileModal();
 setupSettingsModal();
 setupAchievementsModal();
 setupLeaderboardModal();
+setupFactionsModal();
+setupConstructorsModal();
 renderPalette();
 renderDivisionGrid();
 renderDivisionStats();
