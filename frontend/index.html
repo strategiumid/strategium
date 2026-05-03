@@ -15,6 +15,7 @@
     <button class="side-nav-item" type="button" data-open-achievements title="Достижения">★</button>
     <button class="side-nav-item" type="button" data-open-leaderboard title="Лидерборд">♛</button>
     <button class="side-nav-item" type="button" data-open-factions title="Фракции">🛡</button>
+    <button class="side-nav-item" type="button" data-open-shop title="Магазин">🛒</button>
     <button class="side-nav-item" type="button" data-open-settings title="Настройки">⚙</button>
   </aside>
 
@@ -27,10 +28,15 @@
       <a href="#" data-open-achievements>Достижения</a>
       <a href="#" data-open-leaderboard>Лидерборд</a>
       <a href="#" data-open-factions>Фракции</a>
+      <a href="#" data-open-shop>Магазин</a>
       <a href="#" data-open-settings>Настройки</a>
       <a href="#">Поддержка</a>
     </nav>
     <div class="top-right">
+      <div id="user-economy" class="user-economy hidden">
+        <span class="currency-icon">🪙</span>
+        <span id="user-balance">0</span>
+      </div>
       <div class="quick-actions" aria-label="Быстрые действия">
         <button id="quick-notify" class="quick-icon-btn notify-btn" type="button" title="Уведомления">
           <span class="notify-icon" aria-hidden="true">
@@ -207,6 +213,27 @@
     </section>
   </div>
 
+  <div id="shop-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shop-modal-title">
+    <div class="modal-backdrop" id="shop-modal-close-bg"></div>
+    <section class="modal-content shop-modal">
+      <header class="modal-header">
+        <h2 id="shop-modal-title">Магазин StrategiumID</h2>
+        <button id="shop-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Тратьте Strategium Credits на косметику и бонусы.</div>
+      <div class="shop-layout">
+        <div class="shop-category">
+          <h3>Косметика</h3>
+          <div class="shop-grid" id="shop-cosmetics"></div>
+        </div>
+        <div class="shop-category">
+          <h3>Функционал</h3>
+          <div class="shop-grid" id="shop-functional"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
     <div class="modal-backdrop" id="settings-modal-close-bg"></div>
     <section class="modal-content settings-modal">
@@ -290,6 +317,7 @@
     <button type="button" class="mobile-nav-item" data-open-achievements title="Достижения">★</button>
     <button type="button" class="mobile-nav-item" data-open-leaderboard title="Лидерборд">♛</button>
     <button type="button" class="mobile-nav-item" data-open-factions title="Фракции">🛡</button>
+    <button type="button" class="mobile-nav-item" data-open-shop title="Магазин">🛒</button>
     <button type="button" class="mobile-nav-item" data-open-profile title="Профиль">◉</button>
   </nav>
   <script src="./app.js"></script>

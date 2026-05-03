@@ -48,6 +48,20 @@ const constructorsCatalog = {
   }
 };
 let constructorsActiveTab = "hoi4";
+
+const shopItems = {
+  cosmetics: [
+    { id: "gold_frame", title: "Золотая рамка", desc: "Сияющая рамка для вашего аватара.", price: 500, type: "cosmetic" },
+    { id: "neon_name", title: "Неоновый ник", desc: "Ваше имя будет светиться в лидерборде.", price: 800, type: "cosmetic" },
+    { id: "stellar_theme", title: "Тема 'Stellaris'", desc: "Эксклюзивная темная тема для профиля.", price: 1200, type: "cosmetic" }
+  ],
+  functional: [
+    { id: "extra_slot", title: "Доп. слот шаблона", desc: "Увеличивает лимит сохраненных шаблонов на 1.", price: 200, type: "functional" },
+    { id: "leaderboard_boost", title: "Приоритет в топе", desc: "Ваш профиль будет подсвечен в лидерборде.", price: 1000, type: "functional" },
+    { id: "faction_discount", title: "Скидка на фракцию", desc: "-50% на создание своей фракции.", price: 1500, type: "functional" }
+  ]
+};
+
 const stellarisShipDefs = {
   sections: {
     corvette: ["interceptor", "missile_boat", "picket_ship"],
@@ -738,6 +752,7 @@ async function refreshSteamStats() {
   try {
     const result = await apiFetch("/api/steam/stats/refresh", { method: "POST" });
     setAchievementsStatus(`Обновлено игр: ${result.refreshedGames}.`);
+    addReward(10 * (result.refreshedGames || 1), "Обновление статистики Steam");
     await loadSteamAchievements();
   } catch {
     setAchievementsStatus("Не удалось обновить статистику. Проверьте Steam privacy и STEAM_WEB_API_KEY.");
@@ -1800,8 +1815,14 @@ async function saveDivisionTemplate() {
   const method = activeTemplateId ? "PUT" : "POST";
   try {
     const saved = await apiFetch(url, { method, body: JSON.stringify(payload) });
+    const isNew = !activeTemplateId;
     activeTemplateId = saved.id;
     setTemplateStatus("Шаблон сохранён.");
+    
+    if (isNew) {
+      addReward(25, "Создание шаблона дивизии");
+    }
+    
     await loadTemplates();
   } catch {
     setTemplateStatus("Не удалось сохранить шаблон.");
@@ -1889,29 +1910,131 @@ function setupToolsModal() {
   });
 }
 
-function renderCurrentUser() {
-  document.getElementById("steam-user").textContent = currentUser.displayName;
-  document.getElementById("hero-nickname").textContent = currentUser.displayName;
-  document.getElementById("steam-login").classList.toggle("hidden", currentUser.authenticated);
-  document.getElementById("dev-login").classList.toggle("hidden", currentUser.authenticated);
-  document.getElementById("logout").classList.toggle("hidden", !currentUser.authenticated);
-  const dot = document.getElementById("user-status-dot");
-  const label = document.getElementById("user-status-label");
-  const mode = currentUser.authenticated
-    ? (currentUser.steamId ? "steam" : "dev")
-    : "guest";
-  dot.dataset.status = mode;
-  dot.title = mode === "steam" ? "Steam подключен" : mode === "dev" ? "Dev вход" : "Гость";
-  label.textContent = mode === "steam" ? "Онлайн (Steam)" : mode === "dev" ? "Онлайн (Dev)" : "Оффлайн";
-}
-
 async function loadCurrentUser() {
   try {
     currentUser = await apiFetch("/api/me");
+    if (currentUser.authenticated && currentUser.balance === undefined) {
+      currentUser.balance = 100; // Стартовый баланс для демо
+      currentUser.ownedItems = [];
+    }
   } catch {
-    currentUser = { authenticated: false, displayName: "Гость" };
+    currentUser = { authenticated: false, displayName: "Гость", balance: 0, ownedItems: [] };
   }
   renderCurrentUser();
+}
+
+function renderCurrentUser() {
+  const userEconomy = document.getElementById("user-economy");
+  const balanceEl = document.getElementById("user-balance");
+  const loginBtn = document.getElementById("steam-login");
+  const devLoginBtn = document.getElementById("dev-login");
+  const logoutBtn = document.getElementById("logout");
+  const userLabel = document.getElementById("steam-user");
+  const heroNickname = document.getElementById("hero-nickname");
+  const dot = document.getElementById("user-status-dot");
+  const label = document.getElementById("user-status-label");
+
+  if (currentUser.authenticated) {
+    loginBtn.classList.add("hidden");
+    devLoginBtn.classList.add("hidden");
+    logoutBtn.classList.remove("hidden");
+    userLabel.textContent = currentUser.displayName;
+    heroNickname.textContent = currentUser.displayName;
+    
+    const mode = currentUser.steamId ? "steam" : "dev";
+    dot.dataset.status = mode;
+    dot.title = mode === "steam" ? "Steam подключен" : "Dev вход";
+    label.textContent = mode === "steam" ? "Онлайн (Steam)" : "Онлайн (Dev)";
+    
+    userEconomy.classList.remove("hidden");
+    animateNumber(balanceEl, currentUser.balance);
+  } else {
+    loginBtn.classList.remove("hidden");
+    devLoginBtn.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+    userLabel.textContent = "Гость";
+    heroNickname.textContent = "Гость";
+    dot.dataset.status = "guest";
+    dot.title = "Гость";
+    label.textContent = "Оффлайн";
+    
+    userEconomy.classList.add("hidden");
+  }
+}
+
+function addReward(amount, reason) {
+  if (!currentUser.authenticated) return;
+  currentUser.balance = (currentUser.balance || 0) + amount;
+  renderCurrentUser();
+  console.log(`Награда: +${amount} SC (${reason})`);
+}
+
+function renderShop() {
+  const renderGrid = (gridId, items) => {
+    const grid = document.getElementById(gridId);
+    grid.innerHTML = "";
+    items.forEach(item => {
+      const isOwned = currentUser.ownedItems?.includes(item.id);
+      const card = document.createElement("div");
+      card.className = "shop-item";
+      card.innerHTML = `
+        <div class="shop-item-title">${item.title}</div>
+        <div class="shop-item-desc">${item.desc}</div>
+        <div class="shop-item-footer">
+          <div class="shop-item-price">🪙 ${item.price}</div>
+          <button class="sections-btn shop-item-btn ${isOwned ? 'owned' : ''}" 
+                  ${isOwned ? 'disabled' : ''} 
+                  data-item-id="${item.id}">
+            ${isOwned ? 'Куплено' : 'Купить'}
+          </button>
+        </div>
+      `;
+      if (!isOwned) {
+        card.querySelector("button").addEventListener("click", () => buyItem(item));
+      }
+      grid.appendChild(card);
+    });
+  };
+
+  renderGrid("shop-cosmetics", shopItems.cosmetics);
+  renderGrid("shop-functional", shopItems.functional);
+}
+
+async function buyItem(item) {
+  if (currentUser.balance < item.price) {
+    alert("Недостаточно Strategium Credits!");
+    return;
+  }
+
+  if (confirm(`Купить "${item.title}" за ${item.price} SC?`)) {
+    currentUser.balance -= item.price;
+    if (!currentUser.ownedItems) currentUser.ownedItems = [];
+    currentUser.ownedItems.push(item.id);
+    renderCurrentUser();
+    renderShop();
+    alert(`Вы успешно приобрели "${item.title}"!`);
+  }
+}
+
+function setupShopModal() {
+  const modal = document.getElementById("shop-modal");
+  const openModal = (event) => {
+    event.preventDefault();
+    if (!currentUser.authenticated) {
+      alert("Пожалуйста, войдите в систему, чтобы открыть магазин.");
+      return;
+    }
+    modal.classList.remove("hidden");
+    renderShop();
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  
+  document.querySelectorAll("[data-open-shop]").forEach(btn => btn.addEventListener("click", openModal));
+  document.getElementById("shop-modal-close").addEventListener("click", closeModal);
+  document.getElementById("shop-modal-close-bg").addEventListener("click", closeModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
 }
 
 function setupAuth() {
@@ -1952,6 +2075,7 @@ setupAchievementsModal();
 setupLeaderboardModal();
 setupFactionsModal();
 setupConstructorsModal();
+setupShopModal();
 renderPalette();
 renderDivisionGrid();
 renderDivisionStats();
