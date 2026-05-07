@@ -679,6 +679,10 @@ function setupProfileModal() {
     event.preventDefault();
     modal.classList.remove("hidden");
     await loadProfile();
+    // Автоматически загружаем достижения при открытии профиля
+    if (currentUser.authenticated && currentUser.steamId) {
+      loadSteamAchievements();
+    }
   };
   const closeModal = () => modal.classList.add("hidden");
   
@@ -710,6 +714,7 @@ function setupProfileModal() {
   });
   document.getElementById("profile-modal-close").addEventListener("click", closeModal);
   document.getElementById("profile-modal-close-bg").addEventListener("click", closeModal);
+  document.getElementById("refresh-steam-stats")?.addEventListener("click", refreshSteamStats);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
   });
@@ -2394,10 +2399,9 @@ setupQuickActions();
 setupStaggeredReveal();
 setupAuth();
 setupFeedModal();
-setupProfileModal();
-setupSettingsModal();
-setupAchievementsModal();
-setupLeaderboardModal();
+  setupProfileModal();
+  setupSettingsModal();
+  setupLeaderboardModal();
 setupFactionsModal();
 setupConstructorsModal();
 setupShopModal();

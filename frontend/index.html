@@ -12,7 +12,6 @@
     <button class="side-nav-item" type="button" data-open-profile title="Профиль">◉</button>
     <button class="side-nav-item" type="button" data-open-feed title="Лента">☰</button>
     <button class="side-nav-item" type="button" data-open-constructors title="Конструкторы">▦</button>
-    <button class="side-nav-item" type="button" data-open-achievements title="Достижения">★</button>
     <button class="side-nav-item" type="button" data-open-leaderboard title="Лидерборд">♛</button>
     <button class="side-nav-item" type="button" data-open-factions title="Фракции">🛡</button>
     <button class="side-nav-item" type="button" data-open-shop title="Магазин">🛒</button>
@@ -25,7 +24,6 @@
       <a href="#" data-open-profile>Профиль</a>
       <a href="#" data-open-feed>Лента</a>
       <a href="#" data-open-constructors>Конструкторы</a>
-      <a href="#" data-open-achievements>Достижения</a>
       <a href="#" data-open-leaderboard>Лидерборд</a>
       <a href="#" data-open-factions>Фракции</a>
       <a href="#" data-open-shop>Магазин</a>
@@ -131,9 +129,9 @@
 
   <div id="profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
     <div class="modal-backdrop" id="profile-modal-close-bg"></div>
-    <section class="modal-content profile-modal">
+    <section class="modal-content profile-modal full-modal">
       <header class="modal-header">
-        <h2 id="profile-modal-title">Профиль</h2>
+        <h2 id="profile-modal-title">Профиль StrategiumID</h2>
         <button id="profile-modal-close" class="modal-close" aria-label="Закрыть">×</button>
       </header>
       <div class="profile-card">
@@ -152,8 +150,20 @@
           <div class="showcase-slot empty">Свободный слот</div>
         </div>
       </div>
-      <div id="profile-stats" class="profile-stats"></div>
+      <div class="profile-stats" id="profile-stats"></div>
       
+      <div class="profile-achievements-section">
+        <h3>Достижения Steam</h3>
+        <div class="steam-actions">
+          <button id="refresh-steam-stats" class="sections-btn">Обновить из Steam</button>
+        </div>
+        <div id="achievements-status" class="template-status"></div>
+        <div class="achievements-layout">
+          <aside id="steam-games-list" class="steam-games-list"></aside>
+          <section id="steam-achievements-list" class="steam-achievements-list"></section>
+        </div>
+      </div>
+
       <div class="profile-customization">
         <h3>Кастомизация</h3>
         <div class="custom-fields">

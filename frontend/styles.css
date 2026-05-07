@@ -1068,6 +1068,50 @@ body::before {
   color: var(--muted);
 }
 
+.full-modal {
+  width: min(1100px, 98vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.profile-achievements-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid var(--line);
+}
+
+.profile-achievements-section h3 {
+  font-size: 0.9rem;
+  color: var(--gold);
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.achievements-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  min-height: 400px;
+}
+
+.steam-games-list {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.steam-achievements-list {
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
