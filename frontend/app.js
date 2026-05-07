@@ -2393,21 +2393,89 @@ function setupAuth() {
   });
 }
 
+function setupWikiModal() {
+  const modal = document.getElementById("wiki-modal");
+  const openModal = (event) => {
+    event?.preventDefault();
+    modal.classList.remove("hidden");
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  document.querySelectorAll("[data-open-wiki]").forEach((btn) => btn.addEventListener("click", openModal));
+  document.getElementById("wiki-modal-close").addEventListener("click", closeModal);
+  document.getElementById("wiki-modal-close-bg").addEventListener("click", closeModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+}
+
+function handleLoader() {
+  const wrapper = document.getElementById("loader-wrapper");
+  const progress = wrapper.querySelector(".loader-progress");
+  const text = wrapper.querySelector(".loader-text");
+  
+  const steps = [
+    { p: 20, t: "Инициализация систем..." },
+    { p: 45, t: "Синхронизация со Steam..." },
+    { p: 70, t: "Загрузка экономики..." },
+    { p: 100, t: "Готово к развертыванию" }
+  ];
+
+  let currentStep = 0;
+  const interval = setInterval(() => {
+    if (currentStep < steps.length) {
+      progress.style.width = `${steps[currentStep].p}%`;
+      text.textContent = steps[currentStep].t;
+      currentStep++;
+    } else {
+      clearInterval(interval);
+      setTimeout(() => {
+        wrapper.classList.add("fade-out");
+        setTimeout(() => wrapper.remove(), 600);
+      }, 500);
+    }
+  }, 400);
+}
+
+function setupNewsFilters() {
+  const filters = document.querySelectorAll("[data-news-filter]");
+  filters.forEach(btn => {
+    btn.addEventListener("click", () => {
+      filters.forEach(f => f.classList.remove("active"));
+      btn.classList.add("active");
+      const filter = btn.dataset.newsFilter;
+      
+      // В реальности здесь был бы вызов API с фильтром
+      // Для демо просто показываем тост
+      showToast(`Фильтр применен: ${btn.textContent}`, "info", "Новости");
+      
+      // Имитируем перезагрузку новостей
+      const feed = document.getElementById("news-feed");
+      feed.style.opacity = "0.5";
+      setTimeout(() => {
+        feed.style.opacity = "1";
+      }, 300);
+    });
+  });
+}
+
 renderNews(fallbackNews);
 setupSearch();
 setupQuickActions();
 setupStaggeredReveal();
 setupAuth();
 setupFeedModal();
-  setupProfileModal();
-  setupSettingsModal();
-  setupLeaderboardModal();
+setupProfileModal();
+setupSettingsModal();
+setupLeaderboardModal();
 setupFactionsModal();
 setupConstructorsModal();
 setupShopModal();
+setupWikiModal();
+setupNewsFilters();
 renderPalette();
 renderDivisionGrid();
 renderDivisionStats();
 setupToolsModal();
 loadCurrentUser();
 loadNews();
+handleLoader();

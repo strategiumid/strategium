@@ -6,7 +6,14 @@
   <title>StrategiumID</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body>
+  <div id="loader-wrapper">
+    <div class="loader-content">
+      <div class="loader-logo">StrategiumID</div>
+      <div class="loader-bar"><div class="loader-progress"></div></div>
+      <div class="loader-text">Синхронизация данных...</div>
+    </div>
+  </div>
+
   <aside class="side-nav" aria-label="Основная навигация">
     <button class="side-nav-item active" type="button" title="Главная">⌂</button>
     <button class="side-nav-item" type="button" data-open-profile title="Профиль">◉</button>
@@ -14,6 +21,7 @@
     <button class="side-nav-item" type="button" data-open-constructors title="Конструкторы">▦</button>
     <button class="side-nav-item" type="button" data-open-leaderboard title="Лидерборд">♛</button>
     <button class="side-nav-item" type="button" data-open-factions title="Фракции">🛡</button>
+    <button class="side-nav-item" type="button" data-open-wiki title="База знаний">📖</button>
     <button class="side-nav-item" type="button" data-open-shop title="Магазин">🛒</button>
     <button class="side-nav-item" type="button" data-open-settings title="Настройки">⚙</button>
   </aside>
@@ -26,6 +34,7 @@
       <a href="#" data-open-constructors>Конструкторы</a>
       <a href="#" data-open-leaderboard>Лидерборд</a>
       <a href="#" data-open-factions>Фракции</a>
+      <a href="#" data-open-wiki>База знаний</a>
       <a href="#" data-open-shop>Магазин</a>
       <a href="#" data-open-settings>Настройки</a>
       <a href="#">Поддержка</a>
@@ -76,7 +85,14 @@
     <section class="news-block container stagger-item">
       <div class="news-head">
         <h2>Новости сообщества</h2>
-        <small>Paradox Games Feed</small>
+        <small>Лента новостей Paradox</small>
+        <div class="news-filters">
+          <button class="filter-btn active" data-news-filter="all">Все</button>
+          <button class="filter-btn" data-news-filter="hoi4">HOI4</button>
+          <button class="filter-btn" data-news-filter="stellaris">Stellaris</button>
+          <button class="filter-btn" data-news-filter="ck3">CK3</button>
+          <button class="filter-btn" data-news-filter="vic3">Victoria 3</button>
+        </div>
       </div>
       <div id="news-feed" class="news-feed"></div>
     </section>
@@ -268,6 +284,54 @@
         <div id="market-list" class="market-grid"></div>
       </div>
       <div id="constructors-content" class="constructors-content"></div>
+    </section>
+  </div>
+
+  <div id="wiki-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="wiki-modal-title">
+    <div class="modal-backdrop" id="wiki-modal-close-bg"></div>
+    <section class="modal-content full-modal">
+      <header class="modal-header">
+        <h2 id="wiki-modal-title">База знаний Strategium</h2>
+        <button id="wiki-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Гайды, таблицы и прохождения от ветеранов сообщества.</div>
+      <div class="wiki-layout">
+        <aside class="wiki-sidebar">
+          <div class="wiki-search-box">
+            <input type="text" placeholder="Поиск по гайдам...">
+          </div>
+          <nav class="wiki-nav">
+            <div class="wiki-nav-section">
+              <h4>Hearts of Iron IV</h4>
+              <a href="#" class="active">Мета-шаблоны 1.13</a>
+              <a href="#">Гайд по снабжению</a>
+              <a href="#">Флот для чайников</a>
+            </div>
+            <div class="wiki-nav-section">
+              <h4>Stellaris</h4>
+              <a href="#">Билды рас (3.10)</a>
+              <a href="#">Технологическое древо</a>
+              <a href="#">Кризисы и тактики</a>
+            </div>
+            <div class="wiki-nav-section">
+              <h4>Crusader Kings III</h4>
+              <a href="#">Наследование и титулы</a>
+              <a href="#">Гайд по рыцарям</a>
+            </div>
+          </nav>
+        </aside>
+        <main class="wiki-main">
+          <article class="wiki-article">
+            <h1>Мета-шаблоны дивизий (Патч 1.13)</h1>
+            <p>В текущей мете баланс ширины фронта сместился. Основные рекомендации для эффективных дивизий:</p>
+            <ul>
+              <li><strong>Пехота (Оборона):</strong> 9 пехоты + 1 арт (21 ширина) или 6 пехоты + 1 арт (15 ширина) для лесов.</li>
+              <li><strong>Танки (Прорыв):</strong> 8 средних танков + 8 мотопехоты (32 ширина).</li>
+            </ul>
+            <div class="wiki-alert">Совет: Не забывайте добавлять роты ПВО в каждый шаблон, если у вас нет превосходства в воздухе.</div>
+          </article>
+        </main>
+      </div>
     </section>
   </div>
 
