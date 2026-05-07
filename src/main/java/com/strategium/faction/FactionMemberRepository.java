@@ -1,6 +1,7 @@
 package com.strategium.faction;
 
 import com.strategium.user.UserAccount;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,3 +18,4 @@ public interface FactionMemberRepository extends JpaRepository<FactionMember, UU
   long countByFactionId(UUID factionId);
 
   List<FactionMember> findAllByFaction_IdIn(Collection<UUID> factionIds);
+}
