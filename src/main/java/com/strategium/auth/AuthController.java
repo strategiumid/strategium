@@ -1,5 +1,6 @@
 package com.strategium.auth;
 
+import com.strategium.faction.FactionService;
 import com.strategium.steam.SteamAchievementService;
 import com.strategium.user.UserAccount;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +30,7 @@ public class AuthController {
   private final SteamOpenIdService steamOpenIdService;
   private final VkOAuthService vkOAuthService;
   private final SteamAchievementService steamAchievementService;
+  private final FactionService factionService;
   private final String frontendUrl;
 
   public AuthController(
@@ -37,6 +39,7 @@ public class AuthController {
       SteamOpenIdService steamOpenIdService,
       VkOAuthService vkOAuthService,
       SteamAchievementService steamAchievementService,
+      FactionService factionService,
       @Value("${strategium.frontend-url}") String frontendUrl
   ) {
     this.currentUserService = currentUserService;
@@ -44,28 +47,28 @@ public class AuthController {
     this.steamOpenIdService = steamOpenIdService;
     this.vkOAuthService = vkOAuthService;
     this.steamAchievementService = steamAchievementService;
+    this.factionService = factionService;
     this.frontendUrl = frontendUrl;
   }
 
   @GetMapping("/me")
   public UserResponse me() {
     return currentUserService.currentUser()
-        .map(UserResponse::from)
+        .map(user -> UserResponse.from(user, factionService.briefFor(user)))
         .orElseGet(UserResponse::guest);
   }
 
   @PutMapping("/me")
   public UserResponse updateMe(@Valid @RequestBody UpdateProfileRequest request, HttpServletRequest servletRequest) {
-    return UserResponse.from(authService.updateDisplayName(
-        currentUserService.requireUser().getId(),
-        request.displayName(),
-        servletRequest
-    ));
+    UserAccount updated =
+        authService.updateDisplayName(currentUserService.requireUser().getId(), request.displayName(), servletRequest);
+    return UserResponse.from(updated, factionService.briefFor(updated));
   }
 
   @PostMapping("/auth/dev-login")
   public UserResponse devLogin(@Valid @RequestBody DevLoginRequest request, HttpServletRequest servletRequest) {
-    return UserResponse.from(authService.loginDevUser(request.displayName(), servletRequest));
+    UserAccount user = authService.loginDevUser(request.displayName(), servletRequest);
+    return UserResponse.from(user, factionService.briefFor(user));
   }
 
   @GetMapping("/auth/steam/start")
@@ -114,7 +117,8 @@ public class AuthController {
 
   @PostMapping("/auth/vk/unlink")
   public UserResponse unlinkVk(HttpServletRequest request) {
-    return UserResponse.from(authService.unlinkVkUser(currentUserService.requireUser().getId(), request));
+    UserAccount refreshed = authService.unlinkVkUser(currentUserService.requireUser().getId(), request);
+    return UserResponse.from(refreshed, factionService.briefFor(refreshed));
   }
 
   @PostMapping("/auth/logout")

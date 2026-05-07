@@ -114,6 +114,15 @@ class StrategiumApiTests {
   }
 
   @Test
+  void factionsListIsPublic() throws Exception {
+    mockMvc.perform(get("/api/factions").param("scope", "all").param("sort", "achievements"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.scope").value("all"))
+        .andExpect(jsonPath("$.sort").value("achievements"))
+        .andExpect(jsonPath("$.entries").isArray());
+  }
+
+  @Test
   void steamStatsRefreshRequiresLinkedSteamAccount() throws Exception {
     HttpSession session = login("Tester");
 
@@ -130,7 +139,8 @@ class StrategiumApiTests {
             .session((org.springframework.mock.web.MockHttpSession) session))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.steamAvatarUrl").value(nullValue()))
-        .andExpect(jsonPath("$.vkLinked").value(false));
+        .andExpect(jsonPath("$.vkLinked").value(false))
+        .andExpect(jsonPath("$.faction").value(nullValue()));
   }
 
   @Test
@@ -180,6 +190,25 @@ class StrategiumApiTests {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.stats.combatWidth").value(7))
         .andExpect(jsonPath("$.stats.battalionCount").value(3));
+  }
+
+  @Test
+  void authenticatedUserCanCreateFactionAndMeReturnsFaction() throws Exception {
+    HttpSession session = login("FactionOwner");
+    String tag = "T" + Math.floorMod(System.nanoTime(), 1_000_000);
+
+    mockMvc.perform(post("/api/factions")
+            .session((org.springframework.mock.web.MockHttpSession) session)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"name\":\"Test Faction\",\"tag\":\"" + tag + "\",\"theme\":\"hoi4\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.tag").value(tag.toUpperCase(java.util.Locale.ROOT)));
+
+    mockMvc.perform(get("/api/me")
+            .session((org.springframework.mock.web.MockHttpSession) session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.faction.tag").value(tag.toUpperCase(java.util.Locale.ROOT)))
+        .andExpect(jsonPath("$.faction.role").value("LEADER"));
   }
 
   private HttpSession login(String displayName) throws Exception {
