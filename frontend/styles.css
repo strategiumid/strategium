@@ -36,6 +36,15 @@ html {
   background: linear-gradient(180deg, #5675a1, #3a516f);
 }
 
+a { 
+  text-decoration: none; 
+  color: var(--blue-link);
+}
+
+a:hover {
+  text-decoration: none;
+}
+
 body {
   margin: 0;
   font-family: Consolas, "Segoe UI", monospace;
@@ -44,7 +53,6 @@ body {
   background: radial-gradient(circle at 50% 10%, #141b26 0%, var(--bg) 45%);
   min-height: 100vh;
   position: relative;
-  padding-left: 58px;
 }
 
 body::before {
@@ -68,22 +76,6 @@ body::before {
   z-index: 1;
 }
 
-.side-nav {
-  position: fixed;
-  left: 8px;
-  top: 12px;
-  bottom: 12px;
-  width: 42px;
-  border: 1px solid #2a3a51;
-  background: rgba(10, 15, 24, 0.92);
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  padding: 8px 5px;
-  z-index: 85;
-}
-
-.side-nav-item,
 .mobile-nav-item,
 .quick-icon-btn {
   border: 1px solid #334763;
@@ -93,13 +85,11 @@ body::before {
   cursor: pointer;
 }
 
-.side-nav-item,
 .mobile-nav-item {
   width: 100%;
   min-height: 28px;
 }
 
-.side-nav-item.active,
 .mobile-nav-item.active {
   border-color: var(--gold);
   color: var(--gold);
@@ -215,6 +205,7 @@ body::before {
 
 .toast {
   min-width: 280px;
+  max-width: 350px;
   background: rgba(13, 19, 29, 0.95);
   border-left: 4px solid var(--gold);
   border-top: 1px solid var(--line);
@@ -228,6 +219,7 @@ body::before {
   gap: 4px;
   animation: toast-slide-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: auto;
+  border-radius: 2px;
 }
 
 .toast.success { border-left-color: var(--green-achieved); }
@@ -275,6 +267,7 @@ body::before {
   pointer-events: none;
   box-shadow: 0 10px 30px rgba(0,0,0,0.8);
   display: none;
+  border-radius: 4px;
 }
 
 .tooltip-title {
@@ -660,6 +653,8 @@ body::before {
   flex-direction: column;
   gap: 8px;
   transition: border-color 0.2s ease, transform 0.2s ease;
+  min-width: 0;
+  border-radius: 4px;
 }
 
 .shop-item:hover {
@@ -671,6 +666,9 @@ body::before {
   font-weight: bold;
   font-size: 0.85rem;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .shop-item-desc {
@@ -812,6 +810,7 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .market-item-header {
@@ -824,6 +823,10 @@ body::before {
   font-weight: bold;
   font-size: 0.85rem;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }
 
 .market-item-tag {
@@ -935,6 +938,335 @@ body::before {
 
 .friend-name {
   font-size: 0.75rem;
+  color: #d2dced;
+}
+
+/* Construction Overlay */
+.under-construction {
+  position: relative;
+  overflow: hidden;
+}
+
+.under-construction > *:not(.construction-overlay) {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.construction-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 24, 0.4);
+  text-align: center;
+  padding: 20px;
+}
+
+.construction-badge {
+  background: var(--gold);
+  color: #000;
+  padding: 8px 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  box-shadow: 0 0 20px rgba(194, 162, 98, 0.4);
+  margin-bottom: 10px;
+  border-radius: 2px;
+}
+
+.construction-text {
+  color: #fff;
+  font-size: 0.8rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  font-weight: 500;
+}
+
+.top-user-profile {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.top-user-profile:hover {
+  transform: scale(1.05);
+}
+
+.top-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--line-2);
+  border: 1px solid var(--gold);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: var(--gold);
+}
+
+.top-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-customization {
+  margin-top: 20px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.profile-customization h3 {
+  font-size: 0.75rem;
+  color: var(--gold);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.custom-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group label {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.full-modal {
+  width: min(1100px, 98vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.profile-achievements-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid var(--line);
+}
+
+.profile-achievements-section h3 {
+  font-size: 0.9rem;
+  color: var(--gold);
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.achievements-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  min-height: 400px;
+}
+
+.steam-games-list {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.steam-achievements-list {
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Loader Animation */
+#loader-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #0a0f18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+#loader-wrapper.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loader-content {
+  text-align: center;
+  width: 260px;
+}
+
+.loader-logo {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--gold);
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+  animation: pulse-gold 2s infinite;
+}
+
+.loader-bar {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.loader-progress {
+  width: 0%;
+  height: 100%;
+  background: var(--gold);
+  box-shadow: 0 0 10px var(--gold);
+  transition: width 0.3s ease;
+}
+
+.loader-text {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@keyframes pulse-gold {
+  0% { text-shadow: 0 0 10px rgba(194, 162, 98, 0); }
+  50% { text-shadow: 0 0 20px rgba(194, 162, 98, 0.5); }
+  100% { text-shadow: 0 0 10px rgba(194, 162, 98, 0); }
+}
+
+/* News Filters */
+.news-filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  border-color: var(--gold);
+  color: var(--text);
+}
+
+.filter-btn.active {
+  background: rgba(194, 162, 98, 0.1);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Wiki Styles */
+.wiki-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  margin-top: 20px;
+  height: 60vh;
+}
+
+.wiki-sidebar {
+  border-right: 1px solid var(--line);
+  padding-right: 20px;
+  overflow-y: auto;
+}
+
+.wiki-search-box input {
+  width: 100%;
+  background: #07090d;
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-bottom: 20px;
+}
+
+.wiki-nav-section {
+  margin-bottom: 20px;
+}
+
+.wiki-nav-section h4 {
+  font-size: 0.7rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.wiki-nav-section a {
+  display: block;
+  padding: 6px 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  transition: color 0.2s;
+}
+
+.wiki-nav-section a:hover, .wiki-nav-section a.active {
+  color: var(--text);
+}
+
+.wiki-main {
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.wiki-article h1 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: var(--text);
+}
+
+.wiki-article p {
+  line-height: 1.6;
+  color: #b6c0cf;
+  margin-bottom: 15px;
+}
+
+.wiki-article ul {
+  margin-bottom: 15px;
+  padding-left: 20px;
+}
+
+.wiki-article li {
+  margin-bottom: 8px;
+  color: #b6c0cf;
+}
+
+.wiki-alert {
+  background: rgba(194, 162, 98, 0.05);
+  border-left: 3px solid var(--gold);
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  font-style: italic;
   color: #d2dced;
 }
 
@@ -1483,14 +1815,72 @@ body::before {
 }
 
 .vk-open-link:hover {
-  text-decoration: underline;
+  color: #ffffff;
 }
 
-.division-modal { width: min(980px, 96vw); }
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 4px;
+  min-width: 0; /* Allow shrinking */
+  overflow: hidden;
+}
+
+.stat-card strong {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-card span {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--gold);
+}
+
+.stat-card small {
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.stat-card.quality-good {
+  border-color: var(--green-achieved);
+  background: rgba(107, 189, 126, 0.05);
+}
+
+.equipment-list {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+}
+
+.equipment-list h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.75rem;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.division-modal { width: min(1100px, 98vw); }
 .division-layout {
   margin-top: 10px;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1.4fr 1fr;
   gap: 14px;
 }
 
@@ -1961,10 +2351,8 @@ body::before {
 
 @media (max-width: 920px) {
   body {
-    padding-left: 0;
     padding-bottom: 58px;
   }
-  .side-nav { display: none; }
   .mobile-bottom-nav {
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
