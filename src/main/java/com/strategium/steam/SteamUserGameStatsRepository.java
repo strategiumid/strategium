@@ -1,9 +1,11 @@
 package com.strategium.steam;
 
 import com.strategium.user.UserAccount;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SteamUserGameStatsRepository extends JpaRepository<SteamUserGameStats, UUID> {
@@ -11,4 +13,7 @@ public interface SteamUserGameStatsRepository extends JpaRepository<SteamUserGam
   List<SteamUserGameStats> findByUser(UserAccount user);
 
   Optional<SteamUserGameStats> findByUserAndAppId(UserAccount user, int appId);
+
+  @EntityGraph(attributePaths = "user")
+  List<SteamUserGameStats> findAllByUser_IdIn(Collection<UUID> userIds);
 }

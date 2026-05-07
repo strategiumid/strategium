@@ -33,6 +33,7 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/steam/games").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/steam/leaderboard").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/factions").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/division-templates/units").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/division-templates/calculate").permitAll()
             .requestMatchers("/api/**").authenticated()
