@@ -1528,23 +1528,27 @@ function setupConstructorsModal() {
 }
 
 const lineBattalionDefs = [
-  { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, break: 4, def: 20, pierce: 1, armor: 0, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 } },
-  { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, break: 6, def: 10, pierce: 2, armor: 0, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 } },
-  { id: "motorized", name: "Мотопехота", width: 2, hp: 24, org: 58, soft: 14, hard: 2, break: 8, def: 18, pierce: 1, armor: 0, icon: "truck", role: "Быстрая пехота для мобильных операций.", equipment: { infantry: 800 } },
-  { id: "mechanized", name: "Мех. пехота", width: 2, hp: 30, org: 52, soft: 18, hard: 6, break: 12, def: 24, pierce: 3, armor: 10, icon: "mech", role: "Более крепкая мобильная линия.", equipment: { infantry: 700 } },
-  { id: "medium_tank", name: "Средние танки", width: 2, hp: 18, org: 30, soft: 26, hard: 24, break: 42, def: 14, pierce: 35, armor: 60, icon: "tank", role: "Прорыв и бронебойность, требует пехотного ядра.", equipment: { infantry: 300 } },
-  { id: "aa_line", name: "Линейное ПВО", width: 1, hp: 10, org: 20, soft: 3, hard: 12, break: 2, def: 8, pierce: 20, armor: 0, icon: "aa", role: "Защита от авиации и часть hard attack.", equipment: { artillery: 12 } },
-  { id: "at_line", name: "Линейное ПТО", width: 1, hp: 10, org: 20, soft: 2, hard: 20, break: 1, def: 6, pierce: 50, armor: 0, icon: "at", role: "Контр-танковая роль на линии.", equipment: { artillery: 12 } }
+  { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, break: 4, def: 20, pierce: 1, armor: 0, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 }, resources: { steel: 2 }, year: 1936 },
+  { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, break: 6, def: 10, pierce: 2, armor: 0, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 }, resources: { steel: 2, tungsten: 1 }, year: 1936 },
+  { id: "motorized", name: "Мотопехота", width: 2, hp: 24, org: 58, soft: 14, hard: 2, break: 8, def: 18, pierce: 1, armor: 0, icon: "truck", role: "Быстрая пехота для мобильных операций.", equipment: { infantry: 800 }, resources: { steel: 2 }, year: 1936 },
+  { id: "mechanized", name: "Мех. пехота", width: 2, hp: 30, org: 52, soft: 18, hard: 6, break: 12, def: 24, pierce: 3, armor: 10, icon: "mech", role: "Более крепкая мобильная линия.", equipment: { infantry: 700 }, resources: { steel: 3 }, year: 1939 },
+  { id: "medium_tank", name: "Средние танки", width: 2, hp: 18, org: 30, soft: 26, hard: 24, break: 42, def: 14, pierce: 35, armor: 60, icon: "tank", role: "Прорыв и бронебойность, требует пехотного ядра.", equipment: { infantry: 300 }, resources: { steel: 3, tungsten: 2 }, year: 1939 },
+  { id: "super_heavy_tank", name: "Сверхтяжёлые танки", width: 2, hp: 40, org: 15, soft: 45, hard: 50, break: 60, def: 20, pierce: 80, armor: 120, icon: "tank", role: "Максимальная броня и огневая мощь.", equipment: { infantry: 200 }, resources: { steel: 5, chromium: 4 }, year: 1942 },
+  { id: "modern_tank", name: "Современные танки", width: 2, hp: 25, org: 25, soft: 40, hard: 45, break: 55, def: 18, pierce: 90, armor: 100, icon: "tank", role: "Лучшие танки поздней игры.", equipment: { infantry: 250 }, resources: { steel: 4, chromium: 3 }, year: 1945 },
+  { id: "rocket_art", name: "Реактивная арт.", width: 3, hp: 10, org: 15, soft: 42, hard: 1, break: 5, def: 8, pierce: 1, armor: 0, icon: "art", role: "Высокая противопехотная мощь.", equipment: { artillery: 30 }, resources: { steel: 2, tungsten: 1 }, year: 1939 },
+  { id: "amphibious_inf", name: "Амфибийная пехота", width: 2, hp: 22, org: 55, soft: 10, hard: 1, break: 10, def: 15, pierce: 1, armor: 0, icon: "inf", role: "Эффективна при высадках и переправах.", equipment: { infantry: 850 }, resources: { steel: 2 }, year: 1939 },
+  { id: "aa_line", name: "Линейное ПВО", width: 1, hp: 10, org: 20, soft: 3, hard: 12, break: 2, def: 8, pierce: 20, armor: 0, icon: "aa", role: "Защита от авиации и часть hard attack.", equipment: { artillery: 12 }, resources: { steel: 1 }, year: 1936 },
+  { id: "at_line", name: "Линейное ПТО", width: 1, hp: 10, org: 20, soft: 2, hard: 20, break: 1, def: 6, pierce: 50, armor: 0, icon: "at", role: "Контр-танковая роль на линии.", equipment: { artillery: 12 }, resources: { steel: 1, tungsten: 1 }, year: 1936 }
 ];
 
 const supportCompanyDefs = [
-  { id: "eng", name: "Инженеры", org: 2, soft: 2, hard: 0, break: 2, def: 15, pierce: 0, armor: 0, icon: "eng", role: "Бонусы в обороне и на переправах.", equipment: { support: 30 } },
-  { id: "recon", name: "Разведка", org: 1, soft: 1, hard: 0, break: 3, def: 4, pierce: 0, armor: 0, icon: "recon", role: "Инициатива и выбор тактики.", equipment: { support: 30 } },
-  { id: "sup_art", name: "Поддержка арт.", org: 0, soft: 12, hard: 1, break: 2, def: 4, pierce: 1, armor: 0, icon: "art", role: "Дешевый рост soft attack.", equipment: { support: 30, artillery: 24 } },
-  { id: "log", name: "Логистика", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "log", role: "Снижение расхода снабжения.", equipment: { support: 30 } },
-  { id: "signal", name: "Связь", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "signal", role: "Быстрое вступление в бой и инициатива.", equipment: { support: 30 } },
-  { id: "maintenance", name: "Ремрота", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "wrench", role: "Надежность и захват техники.", equipment: { support: 30 } },
-  { id: "aa", name: "Поддержка ПВО", org: 0, soft: 4, hard: 8, break: 1, def: 3, pierce: 15, armor: 0, icon: "aa", role: "ПВО в слоте поддержки.", equipment: { support: 30, artillery: 12 } }
+  { id: "eng", name: "Инженеры", org: 2, soft: 2, hard: 0, break: 2, def: 15, pierce: 0, armor: 0, icon: "eng", role: "Бонусы в обороне и на переправах.", equipment: { support: 30 }, resources: { steel: 1 }, year: 1936 },
+  { id: "recon", name: "Разведка", org: 1, soft: 1, hard: 0, break: 3, def: 4, pierce: 0, armor: 0, icon: "recon", role: "Инициатива и выбор тактики.", equipment: { support: 30 }, resources: { steel: 1 }, year: 1936 },
+  { id: "sup_art", name: "Поддержка арт.", org: 0, soft: 12, hard: 1, break: 2, def: 4, pierce: 1, armor: 0, icon: "art", role: "Дешевый рост soft attack.", equipment: { support: 30, artillery: 24 }, resources: { steel: 1, tungsten: 1 }, year: 1936 },
+  { id: "log", name: "Логистика", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "log", role: "Снижение расхода снабжения.", equipment: { support: 30 }, resources: { steel: 1 }, year: 1936 },
+  { id: "signal", name: "Связь", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "signal", role: "Быстрое вступление в бой и инициатива.", equipment: { support: 30 }, resources: { steel: 1 }, year: 1939 },
+  { id: "maintenance", name: "Ремрота", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "wrench", role: "Надежность и захват техники.", equipment: { support: 30 }, resources: { steel: 1 }, year: 1936 },
+  { id: "aa", name: "Поддержка ПВО", org: 0, soft: 4, hard: 8, break: 1, def: 3, pierce: 15, armor: 0, icon: "aa", role: "ПВО в слоте поддержки.", equipment: { support: 30, artillery: 12 }, resources: { steel: 1 }, year: 1936 }
 ];
 
 const unitTypeById = {
@@ -1553,6 +1557,10 @@ const unitTypeById = {
   motorized: "mobile",
   mechanized: "mobile",
   medium_tank: "armor",
+  super_heavy_tank: "armor",
+  modern_tank: "armor",
+  rocket_art: "artillery",
+  amphibious_inf: "infantry",
   aa_line: "aa",
   at_line: "at",
   eng: "support",
@@ -1577,7 +1585,8 @@ const divisionState = {
     armor: 0,
     support: 0
   },
-  doctrineLevel: 0
+  doctrineLevel: 0,
+  currentYear: 1936
 };
 
 const optimalWidths = new Set([20, 21, 27, 42, 45]);
@@ -1643,12 +1652,16 @@ function applyResearchByType(unit, isSupport = false) {
 function renderPalette() {
   const battalionPalette = document.getElementById("battalion-palette");
   const supportPalette = document.getElementById("support-palette");
-  battalionPalette.innerHTML = lineBattalionDefs.map((unit) => `
+  
+  const filteredLine = lineBattalionDefs.filter(u => !u.year || u.year <= divisionState.currentYear);
+  const filteredSupport = supportCompanyDefs.filter(u => !u.year || u.year <= divisionState.currentYear);
+
+  battalionPalette.innerHTML = filteredLine.map((unit) => `
     <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}">
       ${unitIconSvg(unit.icon)} ${unit.name}
     </button>
   `).join("");
-  supportPalette.innerHTML = supportCompanyDefs.map((unit) => `
+  supportPalette.innerHTML = filteredSupport.map((unit) => `
     <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedSupport === unit.id ? "active" : ""}" data-pick-support="${unit.id}">
       ${unitIconSvg(unit.icon)} ${unit.name}
     </button>
@@ -1838,18 +1851,29 @@ function calculateDivisionStats() {
   const lineUnits = divisionState.lineSlots.filter(Boolean).map((id) => applyResearchByType(lineBattalionDefs.find((unit) => unit.id === id), false));
   const supportUnits = divisionState.supportSlots.filter(Boolean).map((id) => applyResearchByType(supportCompanyDefs.find((unit) => unit.id === id), true));
   const orgBase = lineUnits.length ? lineUnits.reduce((sum, unit) => sum + unit.org, 0) / lineUnits.length : 0;
+  
   const equipment = lineUnits.concat(supportUnits).reduce((acc, unit) => {
     Object.entries(unit.equipment || {}).forEach(([key, value]) => {
       acc[key] = (acc[key] || 0) + Number(value || 0);
     });
     return acc;
   }, { infantry: 0, artillery: 0, support: 0 });
+
+  const resources = lineUnits.concat(supportUnits).reduce((acc, unit) => {
+    Object.entries(unit.resources || {}).forEach(([key, value]) => {
+      acc[key] = (acc[key] || 0) + Number(value || 0);
+    });
+    return acc;
+  }, { steel: 0, tungsten: 0, chromium: 0 });
+
   const lineTypes = lineUnits.reduce((acc, unit) => {
     const type = unitTypeById[unit.id];
     acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
+  
   const previewDelta = getPreviewDelta();
+  
   return {
     width: lineUnits.reduce((sum, unit) => sum + unit.width, 0),
     hp: Math.round(lineUnits.reduce((sum, unit) => sum + unit.hp, 0)),
@@ -1867,6 +1891,7 @@ function calculateDivisionStats() {
     lineFillPercent: Math.round((lineUnits.length / 25) * 100),
     supportFillPercent: Math.round((supportUnits.length / 5) * 100),
     equipment,
+    resources,
     lineTypes,
     previewDelta
   };
@@ -2036,6 +2061,13 @@ function renderDivisionStats() {
     ${statBarMarkup("Army XP Cost", stats.xpCost, 200, "xp")}
     ${statBarMarkup("Industrial Cost (IC)", stats.icCost, 1800, "xp")}
     <div class="division-resource-grid">
+      <div class="res-title">Ресурсы:</div>
+      <div class="res-item">Сталь: <strong>${stats.resources.steel}</strong></div>
+      <div class="res-item">Вольфрам: <strong>${stats.resources.tungsten}</strong></div>
+      <div class="res-item">Хром: <strong>${stats.resources.chromium}</strong></div>
+    </div>
+    <div class="division-resource-grid">
+      <div class="res-title">Снаряжение:</div>
       <div>Infantry Eq.: <strong>${stats.equipment.infantry}</strong></div>
       <div>Artillery: <strong>${stats.equipment.artillery}</strong></div>
       <div>Support Eq.: <strong>${stats.equipment.support}</strong></div>
@@ -2173,6 +2205,39 @@ async function copyDivisionCode() {
   }
 }
 
+async function exportToPng() {
+  const target = document.querySelector(".division-layout.game-like");
+  if (!target) return;
+  
+  setTemplateStatus("Генерация изображения...");
+  try {
+    // Временно скрываем элементы, которые не должны попасть на скриншот
+    const actions = target.querySelectorAll(".template-actions, .template-list, h3:last-of-type, .division-help");
+    actions.forEach(el => el.style.visibility = "hidden");
+    
+    const canvas = await html2canvas(target, {
+      backgroundColor: "#0a0c12",
+      scale: 2,
+      logging: false,
+      useCORS: true,
+      ignoreElements: (el) => el.classList.contains("sections-btn") || el.id === "template-list"
+    });
+    
+    actions.forEach(el => el.style.visibility = "visible");
+    
+    const link = document.createElement("a");
+    link.download = `${document.getElementById("template-name").value || "division"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    setTemplateStatus("Изображение экспортировано.");
+    showToast("Изображение успешно создано!", "success", "Экспорт");
+  } catch (err) {
+    console.error(err);
+    setTemplateStatus("Ошибка при экспорте в PNG.");
+    showToast("Не удалось создать изображение.", "error", "Ошибка");
+  }
+}
+
 function loadMetaTemplate(templateId) {
   const meta = metaTemplates[templateId];
   if (!meta) return;
@@ -2205,7 +2270,19 @@ function setupToolsModal() {
   });
   document.getElementById("new-division").addEventListener("click", resetDivisionTemplate);
   document.getElementById("save-division").addEventListener("click", saveDivisionTemplate);
+  document.getElementById("export-png").addEventListener("click", exportToPng);
   document.getElementById("copy-division-code").addEventListener("click", copyDivisionCode);
+
+  const yearButtons = document.querySelectorAll(".year-btn");
+  yearButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      yearButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      divisionState.currentYear = parseInt(btn.dataset.year);
+      renderPalette();
+    });
+  });
+
   const sliderConfig = [
     ["tech-infantry", "tech-infantry-value", "infantry"],
     ["tech-artillery", "tech-artillery-value", "artillery"],

@@ -384,6 +384,7 @@
           <div class="template-actions">
             <input id="template-name" class="template-name" type="text" maxlength="120" placeholder="Название шаблона" value="Новый шаблон" />
             <button id="save-division" class="sections-btn primary">Сохранить</button>
+            <button id="export-png" class="sections-btn">Экспорт в PNG</button>
             <button id="copy-division-code" class="sections-btn">Копировать код шаблона</button>
             <button id="new-division" class="sections-btn">Новый</button>
             <button id="clear-division" class="sections-btn">Очистить</button>
@@ -398,6 +399,13 @@
         <section>
           <h3>Выбор батальона</h3>
           <div class="division-slider-stack">
+            <label class="division-inline-label">Доступные технологии (год):</label>
+            <div class="year-toggle-group">
+              <button class="year-btn active" data-year="1936">1936</button>
+              <button class="year-btn" data-year="1939">1939</button>
+              <button class="year-btn" data-year="1942">1942</button>
+              <button class="year-btn" data-year="1945">1945</button>
+            </div>
             <label class="division-inline-label" for="tech-infantry">Техника пехоты: <strong id="tech-infantry-value">0</strong></label>
             <input id="tech-infantry" type="range" min="0" max="5" step="1" value="0" />
             <label class="division-inline-label" for="tech-artillery">Техника артиллерии: <strong id="tech-artillery-value">0</strong></label>
@@ -431,6 +439,7 @@
     <button type="button" class="mobile-nav-item" data-open-shop title="Магазин">🛒</button>
     <button type="button" class="mobile-nav-item" data-open-profile title="Профиль">◉</button>
   </nav>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="./app.js"></script>
   <div id="toast-container"></div>
   <div id="strategium-tooltip" class="strategium-tooltip">

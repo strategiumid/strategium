@@ -1984,37 +1984,51 @@ body::before {
 
 .unit-type-infantry {
   border-left: 2px solid #8fa8d4;
-  background: linear-gradient(180deg, rgba(123, 163, 125, 0.2), rgba(123, 163, 125, 0.08));
+  background: 
+    linear-gradient(180deg, rgba(123, 163, 125, 0.2), rgba(123, 163, 125, 0.08)),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234b634c' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .unit-type-artillery {
   border-left: 2px solid #d08a61;
-  background: linear-gradient(180deg, rgba(203, 140, 88, 0.22), rgba(203, 140, 88, 0.1));
+  background: 
+    linear-gradient(180deg, rgba(203, 140, 88, 0.22), rgba(203, 140, 88, 0.1)),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%237a5435' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .unit-type-mobile {
   border-left: 2px solid #79b8a7;
-  background: linear-gradient(180deg, rgba(106, 170, 155, 0.2), rgba(106, 170, 155, 0.1));
+  background: 
+    linear-gradient(180deg, rgba(106, 170, 155, 0.2), rgba(106, 170, 155, 0.1)),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%233d6b5e' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .unit-type-armor {
   border-left: 2px solid #c2a262;
-  background: linear-gradient(180deg, rgba(156, 116, 75, 0.22), rgba(156, 116, 75, 0.08));
+  background: 
+    linear-gradient(180deg, rgba(156, 116, 75, 0.22), rgba(156, 116, 75, 0.08)),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%237a5a31' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .unit-type-aa {
   border-left: 2px solid #6eb3d8;
-  background: linear-gradient(180deg, rgba(95, 150, 185, 0.2), rgba(95, 150, 185, 0.08));
+  background: 
+    linear-gradient(180deg, rgba(95, 150, 185, 0.2), rgba(95, 150, 185, 0.08)),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%233a5b71' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .unit-type-at {
   border-left: 2px solid #c25a5a;
-  background: linear-gradient(180deg, rgba(165, 83, 83, 0.2), rgba(165, 83, 83, 0.08));
+  background: 
+    linear-gradient(180deg, rgba(165, 83, 83, 0.2), rgba(165, 83, 83, 0.08)),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%237c3535' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .unit-type-support {
   border-left: 2px solid #7d8ca6;
-  background: linear-gradient(180deg, rgba(107, 122, 148, 0.2), rgba(107, 122, 148, 0.08));
+  background: 
+    linear-gradient(180deg, rgba(107, 122, 148, 0.2), rgba(107, 122, 148, 0.08)),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23455163' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .template-status { min-height: 18px; }
@@ -2071,6 +2085,28 @@ body::before {
 
 .division-stat-head strong {
   color: #e6edf8;
+}
+
+.division-resource-grid {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  font-size: 0.65rem;
+}
+
+.res-title {
+  grid-column: 1 / -1;
+  color: var(--gold);
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.res-item strong {
+  color: #fff;
 }
 
 .division-stat-bar {
@@ -2230,6 +2266,34 @@ body::before {
 .division-inline-label {
   color: #93a5bd;
   font-size: 0.8rem;
+}
+
+.year-toggle-group {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.year-btn {
+  flex: 1;
+  background: #0d121a;
+  border: 1px solid var(--line-2);
+  color: var(--muted);
+  font-size: 0.7rem;
+  padding: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.year-btn:hover {
+  border-color: var(--gold);
+}
+
+.year-btn.active {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+  font-weight: bold;
 }
 
 .division-slider-stack {
