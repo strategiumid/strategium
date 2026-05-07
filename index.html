@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StrategiumID</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="loader-wrapper">
+    <div class="loader-content">
+      <div class="loader-logo">StrategiumID</div>
+      <div class="loader-bar"><div class="loader-progress"></div></div>
+      <div class="loader-text">Синхронизация данных...</div>
+    </div>
+  </div>
+
+  <header class="topbar container">
+    <nav class="top-nav">
+      <a href="#" class="active">Главная</a>
+      <a href="#" data-open-profile>Профиль</a>
+      <a href="#" data-open-feed>Лента</a>
+      <a href="#" data-open-constructors>Конструкторы</a>
+      <a href="#" data-open-modding>Моддинг</a>
+      <a href="#" data-open-leaderboard>Лидерборд</a>
+      <a href="#" data-open-factions>Фракции</a>
+      <a href="#" data-open-wiki>База знаний</a>
+      <a href="#" data-open-shop>Магазин</a>
+      <a href="#" data-open-settings>Настройки</a>
+      <a href="#">Поддержка</a>
+    </nav>
+    <div class="top-right">
+      <div id="user-economy" class="user-economy hidden">
+        <span class="currency-icon">🪙</span>
+        <span id="user-balance">0</span>
+      </div>
+      <div class="quick-actions" aria-label="Быстрые действия">
+        <button id="quick-notify" class="quick-icon-btn notify-btn" type="button" title="Уведомления">
+          <span class="notify-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 4a5 5 0 0 0-5 5v2.7c0 .7-.2 1.4-.6 2L5 16h14l-1.4-2.3c-.4-.6-.6-1.3-.6-2V9a5 5 0 0 0-5-5z"></path><path d="M10 19a2 2 0 0 0 4 0"></path></svg>
+          </span>
+          <span class="notify-badge">3</span>
+        </button>
+        <button id="quick-messages" class="quick-icon-btn" type="button" title="Сообщения">✉</button>
+      </div>
+      <button id="steam-login" class="auth-btn steam-btn">
+        <span class="steam-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="img">
+            <path d="M17.6 6.2a4.2 4.2 0 0 0-4.2 4.2v.2l-2.9 4.1a3 3 0 1 0 1.6 2.7v-.1l4.2-3a4.2 4.2 0 1 0 1.3-8.1Zm-8.2 13.3a1.7 1.7 0 1 1 0-3.4 1.7 1.7 0 0 1 0 3.4Zm8.2-6.5a2.6 2.6 0 1 1 0-5.2 2.6 2.6 0 0 1 0 5.2Z"></path>
+          </svg>
+        </span>
+        <span>Войти через Steam</span>
+      </button>
+      <button id="dev-login" class="auth-btn">Dev вход</button>
+      <button id="logout" class="auth-btn hidden">Выйти</button>
+      <div id="top-user-profile" class="top-user-profile hidden" data-open-profile title="Профиль">
+        <div id="top-avatar" class="top-avatar"></div>
+      </div>
+      <div class="lang">RU</div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero stagger-item">
+      <div class="hero-logo">StrategiumID</div>
+      <div class="hero-title">
+        <p>Добро пожаловать, Командир</p>
+        <h1 id="hero-nickname">Гость</h1>
+      </div>
+      <div class="hero-search">
+        <input id="global-search" type="text" placeholder="Введите название поста/игры..." />
+      </div>
+    </section>
+
+    <section class="news-block container stagger-item">
+      <div class="news-head">
+        <h2>Новости сообщества</h2>
+        <small>Лента новостей Paradox</small>
+        <div class="news-filters">
+          <button class="filter-btn active" data-news-filter="all">Все</button>
+          <button class="filter-btn" data-news-filter="hoi4">HOI4</button>
+          <button class="filter-btn" data-news-filter="stellaris">Stellaris</button>
+          <button class="filter-btn" data-news-filter="ck3">CK3</button>
+          <button class="filter-btn" data-news-filter="vic3">Victoria 3</button>
+        </div>
+      </div>
+      <div id="news-feed" class="news-feed"></div>
+    </section>
+  </main>
+
+  <template id="news-row-template">
+    <article class="news-row">
+      <div class="news-meta"><span class="news-date"></span></div>
+      <div class="news-title-wrap">
+        <h3 class="news-title"></h3>
+        <p class="news-text"></p>
+      </div>
+      <div class="news-controls">
+        <span class="news-expand-icon" aria-hidden="true">▾</span>
+        <div class="news-tag"></div>
+      </div>
+    </article>
+  </template>
+
+  <div id="feed-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="feed-modal-title">
+    <div class="modal-backdrop" id="feed-modal-close-bg"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <h2 id="feed-modal-title">Лента Strategium VK</h2>
+        <button id="feed-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Источник: <a href="https://vk.com/strategium" target="_blank" rel="noopener noreferrer">vk.com/strategium</a></div>
+      <div id="vk-feed-list" class="vk-feed-list"></div>
+    </section>
+  </div>
+
+  <div id="achievements-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="achievements-modal-title">
+    <div class="modal-backdrop" id="achievements-modal-close-bg"></div>
+    <section class="modal-content achievements-modal">
+      <header class="modal-header">
+        <h2 id="achievements-modal-title">Достижения Steam по выбранным играм</h2>
+        <button id="achievements-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Показываются только игры из поддерживаемого каталога StrategiumID.</div>
+      <div class="steam-actions">
+        <button id="refresh-steam-stats" class="sections-btn">Обновить Steam-статистику</button>
+      </div>
+      <div id="achievements-status" class="template-status"></div>
+      <div class="achievements-layout">
+        <aside id="steam-games-list" class="steam-games-list"></aside>
+        <section id="steam-achievements-list" class="steam-achievements-list"></section>
+      </div>
+    </section>
+  </div>
+
+  <div id="profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-backdrop" id="profile-modal-close-bg"></div>
+    <section class="modal-content profile-modal full-modal">
+      <header class="modal-header">
+        <h2 id="profile-modal-title">Профиль StrategiumID</h2>
+        <button id="profile-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="profile-card">
+        <div id="profile-avatar" class="profile-avatar">ST</div>
+        <div>
+          <h3 id="profile-name">Гость</h3>
+          <p id="profile-steam">Steam не привязан</p>
+          <p id="profile-vk">VK не привязан</p>
+        </div>
+      </div>
+      <div class="profile-showcase">
+        <h3>Витрина достижений</h3>
+        <div id="achievement-showcase-list" class="showcase-grid">
+          <div class="showcase-slot empty">Свободный слот</div>
+          <div class="showcase-slot empty">Свободный слот</div>
+          <div class="showcase-slot empty">Свободный слот</div>
+        </div>
+      </div>
+      <div class="profile-stats" id="profile-stats"></div>
+      
+      <div class="profile-achievements-section">
+        <h3>Достижения Steam</h3>
+        <div class="steam-actions">
+          <button id="refresh-steam-stats" class="sections-btn">Обновить из Steam</button>
+        </div>
+        <div id="achievements-status" class="template-status"></div>
+        <div class="achievements-layout">
+          <aside id="steam-games-list" class="steam-games-list"></aside>
+          <section id="steam-achievements-list" class="steam-achievements-list"></section>
+        </div>
+      </div>
+
+      <div class="profile-customization">
+        <h3>Кастомизация</h3>
+        <div class="custom-fields">
+          <div class="field-group">
+            <label>Любимая игра Paradox</label>
+            <select id="pref-fav-game" class="division-select">
+              <option value="hoi4">Hearts of Iron IV</option>
+              <option value="stellaris">Stellaris</option>
+              <option value="ck3">Crusader Kings III</option>
+              <option value="vic3">Victoria 3</option>
+              <option value="eu4">Europa Universalis IV</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>О себе (кратко)</label>
+            <input type="text" id="pref-bio" placeholder="Например: Закрашиваю карту в один цвет..." class="division-select" style="background: #07090d; border: 1px solid var(--line-2); color: var(--text); padding: 6px;">
+          </div>
+          <button id="save-profile-prefs" class="sections-btn primary" style="width: 100%; margin-top: 10px;">Сохранить настройки</button>
+        </div>
+      </div>
+
+      <div class="profile-friends">
+        <h3>Друзья</h3>
+        <div class="friends-search">
+          <input type="text" id="friend-search-input" placeholder="ID или ник друга...">
+          <button class="sections-btn" id="add-friend-btn">Добавить</button>
+        </div>
+        <div id="friends-list" class="friends-list"></div>
+      </div>
+      <div id="profile-status" class="template-status"></div>
+    </section>
+  </div>
+
+  <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="leaderboard-modal-title">
+    <div class="modal-backdrop" id="leaderboard-modal-close-bg"></div>
+    <section class="modal-content leaderboard-modal">
+      <header class="modal-header">
+        <h2 id="leaderboard-modal-title">Лидерборд Steam</h2>
+        <button id="leaderboard-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Рейтинг строится по пользователям сайта, которые обновили Steam-статистику.</div>
+      <div class="leaderboard-controls">
+        <select id="leaderboard-mode">
+          <option value="personal">Личный</option>
+          <option value="faction">Фракционный</option>
+        </select>
+        <select id="leaderboard-scope">
+          <option value="pdx">Только PDX</option>
+          <option value="all">Все поддерживаемые</option>
+        </select>
+        <select id="leaderboard-sort">
+          <option value="achievements">По достижениям</option>
+          <option value="hours">По часам</option>
+        </select>
+        <button id="compare-self" class="sections-btn">Сравнить с собой</button>
+      </div>
+      <div id="leaderboard-status" class="template-status"></div>
+      <div id="leaderboard-list" class="leaderboard-list"></div>
+      <div id="leaderboard-compare" class="leaderboard-compare hidden"></div>
+    </section>
+  </div>
+
+  <div id="factions-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="factions-modal-title">
+    <div class="modal-backdrop" id="factions-modal-close-bg"></div>
+    <section class="modal-content leaderboard-modal">
+      <header class="modal-header">
+        <h2 id="factions-modal-title">Фракции</h2>
+        <button id="factions-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Стратегические альянсы игроков Paradox: общий прогресс, роли, рейтинг и операции.</div>
+      <div class="leaderboard-controls">
+        <select id="faction-theme" class="division-select">
+          <option value="hoi4">Тема HOI4</option>
+          <option value="ck3">Тема CK3</option>
+          <option value="stellaris">Тема Stellaris</option>
+        </select>
+        <button id="create-faction" class="sections-btn">Создать фракцию</button>
+      </div>
+      <div id="factions-status" class="template-status"></div>
+      <div id="factions-list" class="leaderboard-list"></div>
+    </section>
+  </div>
+
+  <div id="constructors-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="constructors-modal-title">
+    <div class="modal-backdrop" id="constructors-modal-close-bg"></div>
+    <section class="modal-content achievements-modal">
+      <header class="modal-header">
+        <h2 id="constructors-modal-title">Конструкторы StrategiumID</h2>
+        <button id="constructors-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Единый центр конструкторов для Hearts of Iron IV и Stellaris.</div>
+      <div id="constructors-tabs" class="leaderboard-controls"></div>
+      <div id="constructors-market" class="template-market-container hidden">
+        <header class="market-header">
+          <h3>Биржа шаблонов</h3>
+          <div class="market-filters">
+            <button class="sections-btn active" data-market-filter="all">Все</button>
+            <button class="sections-btn" data-market-filter="hoi4">HOI4</button>
+            <button class="sections-btn" data-market-filter="stellaris">Stellaris</button>
+          </div>
+        </header>
+        <div id="market-list" class="market-grid"></div>
+      </div>
+      <div id="constructors-content" class="constructors-content"></div>
+    </section>
+  </div>
+
+  <div id="modding-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modding-modal-title">
+    <div class="modal-backdrop" id="modding-modal-close-bg"></div>
+    <section class="modal-content full-modal">
+      <header class="modal-header">
+        <h2 id="modding-modal-title">Инструменты моддинга HOI4</h2>
+        <button id="modding-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Создание стран, фокусов и отладка скриптов.</div>
+      <div id="modding-tabs" class="leaderboard-controls">
+        <button class="sections-btn active" data-mod-tab="country">Редактор стран</button>
+        <button class="sections-btn" data-mod-tab="focus">Дерево фокусов</button>
+        <button class="sections-btn" data-mod-tab="syntax">Проверка синтаксиса</button>
+        <button class="sections-btn" data-mod-tab="simulation">Симуляция</button>
+        <button class="sections-btn" data-mod-tab="logs">Парсер логов</button>
+      </div>
+      <div id="modding-content" class="modding-content"></div>
+    </section>
+  </div>
+
+  <div id="wiki-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="wiki-modal-title">
+    <div class="modal-backdrop" id="wiki-modal-close-bg"></div>
+    <section class="modal-content full-modal">
+      <header class="modal-header">
+        <h2 id="wiki-modal-title">База знаний Strategium</h2>
+        <button id="wiki-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Гайды, таблицы и прохождения от ветеранов сообщества.</div>
+      <div class="wiki-layout">
+        <aside class="wiki-sidebar">
+          <div class="wiki-search-box">
+            <input type="text" placeholder="Поиск по гайдам...">
+          </div>
+          <nav class="wiki-nav">
+            <div class="wiki-nav-section">
+              <h4>Hearts of Iron IV</h4>
+              <a href="#" class="active">Мета-шаблоны 1.13</a>
+              <a href="#">Гайд по снабжению</a>
+              <a href="#">Флот для чайников</a>
+            </div>
+            <div class="wiki-nav-section">
+              <h4>Stellaris</h4>
+              <a href="#">Билды рас (3.10)</a>
+              <a href="#">Технологическое древо</a>
+              <a href="#">Кризисы и тактики</a>
+            </div>
+            <div class="wiki-nav-section">
+              <h4>Crusader Kings III</h4>
+              <a href="#">Наследование и титулы</a>
+              <a href="#">Гайд по рыцарям</a>
+            </div>
+          </nav>
+        </aside>
+        <main class="wiki-main">
+          <article class="wiki-article">
+            <h1>Мета-шаблоны дивизий (Патч 1.13)</h1>
+            <p>В текущей мете баланс ширины фронта сместился. Основные рекомендации для эффективных дивизий:</p>
+            <ul>
+              <li><strong>Пехота (Оборона):</strong> 9 пехоты + 1 арт (21 ширина) или 6 пехоты + 1 арт (15 ширина) для лесов.</li>
+              <li><strong>Танки (Прорыв):</strong> 8 средних танков + 8 мотопехоты (32 ширина).</li>
+            </ul>
+            <div class="wiki-alert">Совет: Не забывайте добавлять роты ПВО в каждый шаблон, если у вас нет превосходства в воздухе.</div>
+          </article>
+        </main>
+      </div>
+    </section>
+  </div>
+
+  <div id="shop-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shop-modal-title">
+    <div class="modal-backdrop" id="shop-modal-close-bg"></div>
+    <section class="modal-content shop-modal">
+      <header class="modal-header">
+        <h2 id="shop-modal-title">Магазин StrategiumID</h2>
+        <button id="shop-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Тратьте Strategium Credits на косметику и бонусы.</div>
+      <div class="shop-layout">
+        <div class="shop-category">
+          <h3>Косметика</h3>
+          <div class="shop-grid" id="shop-cosmetics"></div>
+        </div>
+        <div class="shop-category">
+          <h3>Функционал</h3>
+          <div class="shop-grid" id="shop-functional"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-backdrop" id="settings-modal-close-bg"></div>
+    <section class="modal-content settings-modal">
+      <header class="modal-header">
+        <h2 id="settings-modal-title">Настройки профиля</h2>
+        <button id="settings-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Привяжите VK, чтобы лайкать посты и оставлять комментарии из ленты.</div>
+      <div class="settings-card">
+        <div>
+          <h3>VK</h3>
+          <p id="vk-link-status">Статус VK не загружен.</p>
+        </div>
+        <div class="settings-actions">
+          <button id="vk-link" class="sections-btn">Привязать VK</button>
+          <button id="vk-unlink" class="sections-btn hidden">Отвязать VK</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="tools-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tools-modal-title">
+    <div class="modal-backdrop" id="tools-modal-close-bg"></div>
+    <section class="modal-content division-modal">
+      <header class="modal-header">
+        <h2 id="tools-modal-title">Конструктор дивизий HOI4</h2>
+        <button id="tools-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Сетка как в игре: 5 колонок по 5 батальонов + 5 рот поддержки.</div>
+
+      <div class="division-layout game-like">
+        <section>
+          <h3>Шаблон дивизии</h3>
+          <div id="division-grid" class="division-grid"></div>
+          <h3>Роты поддержки</h3>
+          <div id="support-grid" class="support-grid"></div>
+          <div class="template-actions">
+            <input id="template-name" class="template-name" type="text" maxlength="120" placeholder="Название шаблона" value="Новый шаблон" />
+            <button id="save-division" class="sections-btn primary">Сохранить</button>
+            <button id="export-png" class="sections-btn">Экспорт в PNG</button>
+            <button id="copy-division-code" class="sections-btn">Копировать код шаблона</button>
+            <button id="new-division" class="sections-btn">Новый</button>
+            <button id="clear-division" class="sections-btn">Очистить</button>
+          </div>
+          <div class="template-actions">
+            <button class="sections-btn" data-load-meta="7_2">Мета: 7/2</button>
+            <button class="sections-btn" data-load-meta="14_4">Мета: 14/4</button>
+            <button class="sections-btn" data-load-meta="space_marine">Мета: Space Marine</button>
+          </div>
+          <div id="template-status" class="template-status"></div>
+        </section>
+        <section>
+          <h3>Выбор батальона</h3>
+          <div class="division-slider-stack">
+            <label class="division-inline-label">Доступные технологии (год):</label>
+            <div class="year-toggle-group">
+              <button class="year-btn active" data-year="1936">1936</button>
+              <button class="year-btn" data-year="1939">1939</button>
+              <button class="year-btn" data-year="1942">1942</button>
+              <button class="year-btn" data-year="1945">1945</button>
+            </div>
+            <label class="division-inline-label" for="tech-infantry">Техника пехоты: <strong id="tech-infantry-value">0</strong></label>
+            <input id="tech-infantry" type="range" min="0" max="5" step="1" value="0" />
+            <label class="division-inline-label" for="tech-artillery">Техника артиллерии: <strong id="tech-artillery-value">0</strong></label>
+            <input id="tech-artillery" type="range" min="0" max="5" step="1" value="0" />
+            <label class="division-inline-label" for="tech-armor">Техника бронетехники: <strong id="tech-armor-value">0</strong></label>
+            <input id="tech-armor" type="range" min="0" max="5" step="1" value="0" />
+            <label class="division-inline-label" for="tech-support">Техника поддержки: <strong id="tech-support-value">0</strong></label>
+            <input id="tech-support" type="range" min="0" max="5" step="1" value="0" />
+            <label class="division-inline-label" for="doctrine-level">Доктрина: <strong id="doctrine-level-value">0</strong></label>
+            <input id="doctrine-level" type="range" min="0" max="5" step="1" value="0" />
+          </div>
+          <div id="battalion-palette" class="palette-grid"></div>
+          <h3>Выбор роты поддержки</h3>
+          <div id="support-palette" class="palette-grid"></div>
+          <div id="division-stats" class="division-stats"></div>
+          <div id="division-ai-compare" class="division-ai-compare"></div>
+          <h3>Сохранённые шаблоны</h3>
+          <div id="template-list" class="template-list"></div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <nav class="mobile-bottom-nav" aria-label="Навигация">
+    <button type="button" class="mobile-nav-item active" title="Главная">⌂</button>
+    <button type="button" class="mobile-nav-item" data-open-feed title="Лента">☰</button>
+    <button type="button" class="mobile-nav-item" data-open-constructors title="Конструкторы">▦</button>
+    <button type="button" class="mobile-nav-item" data-open-achievements title="Достижения">★</button>
+    <button type="button" class="mobile-nav-item" data-open-leaderboard title="Лидерборд">♛</button>
+    <button type="button" class="mobile-nav-item" data-open-factions title="Фракции">🛡</button>
+    <button type="button" class="mobile-nav-item" data-open-shop title="Магазин">🛒</button>
+    <button type="button" class="mobile-nav-item" data-open-profile title="Профиль">◉</button>
+  </nav>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="./app.js"></script>
+  <div id="toast-container"></div>
+  <div id="strategium-tooltip" class="strategium-tooltip">
+    <div class="tooltip-title" id="tooltip-title"></div>
+    <div class="tooltip-body" id="tooltip-body"></div>
+    <div class="tooltip-desc" id="tooltip-desc"></div>
+  </div>
+</body>
+</html>
