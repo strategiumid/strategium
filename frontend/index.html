@@ -56,9 +56,9 @@
       </button>
       <button id="dev-login" class="auth-btn">Dev вход</button>
       <button id="logout" class="auth-btn hidden">Выйти</button>
-      <span id="steam-user" class="steam-user">Гость</span>
-      <span class="dot" id="user-status-dot" title="Гость"></span>
-      <span id="user-status-label" class="user-status-label">Гость</span>
+      <div id="top-user-profile" class="top-user-profile hidden" data-open-profile title="Профиль">
+        <div id="top-avatar" class="top-avatar"></div>
+      </div>
       <div class="lang">RU</div>
     </div>
   </header>
@@ -153,6 +153,28 @@
         </div>
       </div>
       <div id="profile-stats" class="profile-stats"></div>
+      
+      <div class="profile-customization">
+        <h3>Кастомизация</h3>
+        <div class="custom-fields">
+          <div class="field-group">
+            <label>Любимая игра Paradox</label>
+            <select id="pref-fav-game" class="division-select">
+              <option value="hoi4">Hearts of Iron IV</option>
+              <option value="stellaris">Stellaris</option>
+              <option value="ck3">Crusader Kings III</option>
+              <option value="vic3">Victoria 3</option>
+              <option value="eu4">Europa Universalis IV</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>О себе (кратко)</label>
+            <input type="text" id="pref-bio" placeholder="Например: Закрашиваю карту в один цвет..." class="division-select" style="background: #07090d; border: 1px solid var(--line-2); color: var(--text); padding: 6px;">
+          </div>
+          <button id="save-profile-prefs" class="sections-btn primary" style="width: 100%; margin-top: 10px;">Сохранить настройки</button>
+        </div>
+      </div>
+
       <div class="profile-friends">
         <h3>Друзья</h3>
         <div class="friends-search">

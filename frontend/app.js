@@ -32,6 +32,11 @@ let activeTemplateId = null;
 let steamAchievementSummary = null;
 let selectedSteamGameSlug = null;
 let lastLeaderboardResponse = null;
+const mockFactions = [
+  { id: "1", name: "Стальной Легион", tag: "STL", totalAchievements: 1480, avgCompletion: 62, uniqueGames: 19, memberCount: 34, rank: 1, progress: 84 },
+  { id: "2", name: "Орден Маршалов", tag: "ORD", totalAchievements: 1325, avgCompletion: 58, uniqueGames: 16, memberCount: 29, rank: 2, progress: 73 },
+  { id: "3", name: "Северный Альянс", tag: "NTH", totalAchievements: 1186, avgCompletion: 55, uniqueGames: 15, memberCount: 26, rank: 3, progress: 65 }
+];
 const constructorsCatalog = {
   hoi4: {
     title: "Hearts of Iron IV",
@@ -546,6 +551,14 @@ function renderProfileBase(user) {
     avatar.textContent = (user.displayName || "ST").slice(0, 2).toUpperCase();
   }
   
+  // Заполняем поля кастомизации
+  const favGameSelect = document.getElementById("pref-fav-game");
+  const bioInput = document.getElementById("pref-bio");
+  if (favGameSelect && bioInput) {
+    favGameSelect.value = user.prefs?.favGame || "hoi4";
+    bioInput.value = user.prefs?.bio || "";
+  }
+  
   renderPinnedAchievements();
   renderFriends();
 }
@@ -679,6 +692,17 @@ function setupProfileModal() {
     input.value = "";
     renderFriends();
     showToast(`Запрос отправлен ${name}!`, "success", "Друзья");
+  });
+
+  document.getElementById("save-profile-prefs")?.addEventListener("click", () => {
+    const favGame = document.getElementById("pref-fav-game").value;
+    const bio = document.getElementById("pref-bio").value.trim();
+    
+    if (!currentUser.prefs) currentUser.prefs = {};
+    currentUser.prefs.favGame = favGame;
+    currentUser.prefs.bio = bio;
+    
+    showToast("Настройки профиля сохранены!", "success", "Профиль");
   });
 
   document.querySelectorAll("[data-open-profile]").forEach((button) => {
@@ -938,52 +962,35 @@ function setupAchievementsModal() {
   });
 }
 
-function renderFactionLeaderboardRows(entries) {
-  const list = document.getElementById("leaderboard-list");
-  list.innerHTML = "";
-
-  if (!entries?.length) {
-    const empty = document.createElement("p");
-    empty.className = "steam-empty";
-    empty.textContent = "Фракций пока нет. Создайте первую во вкладке «Фракции».";
-    list.appendChild(empty);
-    return;
-  }
-
-  entries.forEach((faction) => {
-    const row = document.createElement("article");
-    row.className = "leaderboard-row";
-    row.innerHTML = `
-      <strong>#<span data-counter="${faction.rank}">0</span></strong>
-      <div>
-        <span>[${faction.tag}] ${faction.name}</span>
-        <small><span data-counter="${faction.totalAchievements}">0</span> достижений • <span data-counter="${faction.avgCompletion}">0</span>% средний прогресс • <span data-counter="${faction.uniqueGames}">0</span> тайтлов</small>
-      </div>
-      <div class="leaderboard-row-side">
-        <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> участников</span>
-        <button type="button" class="sections-btn" data-open-factions-from-lb>Во фракции</button>
-      </div>
-    `;
-    list.appendChild(row);
-  });
-  runAnimatedCounters(list);
-  list.querySelectorAll("[data-open-factions-from-lb]").forEach((btn) => btn.addEventListener("click", () => {
-    document.getElementById("factions-modal")?.classList.remove("hidden");
-    loadFactionsModalList();
-  }));
-}
-
 function renderLeaderboard(response) {
+  lastLeaderboardResponse = response;
   const list = document.getElementById("leaderboard-list");
   list.innerHTML = "";
   const mode = document.getElementById("leaderboard-mode")?.value || "personal";
 
   if (mode === "faction") {
-    renderFactionLeaderboardRows(response?.entries);
+    mockFactions.forEach((faction) => {
+      const row = document.createElement("article");
+      row.className = "leaderboard-row";
+      row.innerHTML = `
+        <strong>#<span data-counter="${faction.rank}">0</span></strong>
+        <div>
+          <span>[${faction.tag}] ${faction.name}</span>
+          <small><span data-counter="${faction.totalAchievements}">0</span> достижений • <span data-counter="${faction.avgCompletion}">0</span>% средний прогресс • <span data-counter="${faction.uniqueGames}">0</span> тайтлов</small>
+        </div>
+        <div class="leaderboard-row-side">
+          <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> участников</span>
+          <button type="button" class="sections-btn" data-open-factions>Открыть</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+    runAnimatedCounters(list);
+    list.querySelectorAll("[data-open-factions]").forEach((btn) => btn.addEventListener("click", () => {
+      document.getElementById("factions-modal")?.classList.remove("hidden");
+    }));
     return;
   }
-
-  lastLeaderboardResponse = response;
 
   if (!response.entries?.length) {
     const empty = document.createElement("p");
@@ -1112,8 +1119,7 @@ async function loadLeaderboard() {
   renderSkeleton(document.getElementById("leaderboard-list"), 6, true);
   try {
     if ((document.getElementById("leaderboard-mode")?.value || "personal") === "faction") {
-      const response = await apiFetch(`/api/factions?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
-      renderLeaderboard(response);
+      renderLeaderboard({ entries: [] });
     } else {
       const response = await apiFetch(`/api/steam/leaderboard?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
       renderLeaderboard(response);
@@ -1139,11 +1145,6 @@ function setupLeaderboardModal() {
   document.getElementById("leaderboard-scope").addEventListener("change", loadLeaderboard);
   document.getElementById("leaderboard-sort").addEventListener("change", loadLeaderboard);
   document.getElementById("compare-self").addEventListener("click", async () => {
-    if ((document.getElementById("leaderboard-mode")?.value || "personal") === "faction") {
-      document.getElementById("leaderboard-status").textContent =
-        "Сравнение по играм доступно только в личном рейтинге.";
-      return;
-    }
     if (!lastLeaderboardResponse?.entries?.length) {
       await loadLeaderboard();
     }
@@ -1157,38 +1158,14 @@ function setupLeaderboardModal() {
   });
 }
 
-let lastFactionModalEntries = [];
-
-function renderFactionsList(entries) {
+function renderFactionsList() {
   const list = document.getElementById("factions-list");
   const theme = document.getElementById("faction-theme").value;
   list.innerHTML = "";
-  if (!entries?.length) {
-    const empty = document.createElement("p");
-    empty.className = "steam-empty";
-    empty.textContent = "Пока нет фракций — нажмите «Создать фракцию».";
-    list.appendChild(empty);
-    return;
-  }
-  const myFactionId = currentUser.faction?.id != null ? String(currentUser.faction.id) : null;
-
-  entries.forEach((faction) => {
-    const ratingScore = Math.round(
-      (faction.totalAchievements * 0.5) + (faction.avgCompletion * 0.3) + (faction.uniqueGames * 0.2)
-    );
+  const cards = [...mockFactions].map((faction) => {
+    const ratingScore = Math.round((faction.totalAchievements * 0.5) + (faction.avgCompletion * 0.3) + (faction.uniqueGames * 0.2));
     const row = document.createElement("article");
     row.className = `leaderboard-row faction-theme-${theme}`;
-    const fid = String(faction.id);
-    let actionHtml = "";
-    if (myFactionId && myFactionId === fid) {
-      actionHtml = `<button type="button" class="sections-btn" data-leave-faction="${fid}">Покинуть</button>`;
-    } else if (myFactionId) {
-      actionHtml = `<button type="button" class="sections-btn" disabled title="Сначала выйдите из текущей фракции">Занято</button>`;
-    } else if (!currentUser.authenticated) {
-      actionHtml = `<button type="button" class="sections-btn" disabled>Войдите</button>`;
-    } else {
-      actionHtml = `<button type="button" class="sections-btn" data-join-faction="${fid}">Вступить</button>`;
-    }
     row.innerHTML = `
       <strong>#<span data-counter="${faction.rank}">0</span></strong>
       <div>
@@ -1197,57 +1174,13 @@ function renderFactionsList(entries) {
       </div>
       <div class="leaderboard-row-side">
         <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> мест</span>
-        ${actionHtml}
+        <button type="button" class="sections-btn">Подать заявку</button>
       </div>
     `;
-    list.appendChild(row);
+    return row;
   });
+  cards.forEach((card) => list.appendChild(card));
   runAnimatedCounters(list);
-  list.querySelectorAll("[data-join-faction]").forEach((btn) =>
-    btn.addEventListener("click", () => joinFaction(btn.dataset.joinFaction)));
-  list.querySelectorAll("[data-leave-faction]").forEach((btn) =>
-    btn.addEventListener("click", () => leaveFaction(btn.dataset.leaveFaction)));
-}
-
-async function joinFaction(id) {
-  try {
-    await apiFetch(`/api/factions/${id}/join`, { method: "POST" });
-    await loadCurrentUser();
-    await loadFactionsModalList();
-  } catch {
-    window.alert("Не удалось вступить во фракцию.");
-  }
-}
-
-async function leaveFaction(id) {
-  if (!window.confirm("Покинуть фракцию?")) return;
-  try {
-    await apiFetch(`/api/factions/${id}/leave`, { method: "POST" });
-    await loadCurrentUser();
-    await loadFactionsModalList();
-  } catch {
-    window.alert("Не удалось покинуть фракцию.");
-  }
-}
-
-async function loadFactionsModalList() {
-  const status = document.getElementById("factions-status");
-  const list = document.getElementById("factions-list");
-  list.innerHTML = `<p class="template-status">Загрузка...</p>`;
-  try {
-    const data = await apiFetch("/api/factions?scope=all&sort=achievements");
-    lastFactionModalEntries = data.entries || [];
-    renderFactionsList(lastFactionModalEntries);
-    if (currentUser.faction?.tag) {
-      status.textContent =
-        `Ваша фракция: [${currentUser.faction.tag}] ${currentUser.faction.name || ""} (${currentUser.faction.role}).`;
-    } else {
-      status.textContent = "Вступайте во фракцию или создайте свою. Статистика — по кэшу Steam участников.";
-    }
-  } catch {
-    status.textContent = "Не удалось загрузить фракции.";
-    list.innerHTML = "";
-  }
 }
 
 function setupFactionsModal() {
@@ -1255,38 +1188,16 @@ function setupFactionsModal() {
   const openModal = (event) => {
     event?.preventDefault();
     modal.classList.remove("hidden");
-    loadFactionsModalList();
+    renderFactionsList();
+    document.getElementById("factions-status").textContent = "Фракции ранжируются еженедельно. Anti-abuse: 24ч после выхода, 72ч после исключения.";
   };
   const closeModal = () => modal.classList.add("hidden");
   document.querySelectorAll("[data-open-factions]").forEach((btn) => btn.addEventListener("click", openModal));
   document.getElementById("factions-modal-close").addEventListener("click", closeModal);
   document.getElementById("factions-modal-close-bg").addEventListener("click", closeModal);
-  document.getElementById("faction-theme").addEventListener("change", () => renderFactionsList(lastFactionModalEntries));
-  document.getElementById("create-faction").addEventListener("click", async () => {
-    if (!currentUser.authenticated) {
-      window.alert("Войдите через Steam или Dev-вход.");
-      return;
-    }
-    if (currentUser.faction) {
-      window.alert("Сначала покиньте текущую фракцию.");
-      return;
-    }
-    const name = window.prompt("Название фракции");
-    if (!name || !name.trim()) return;
-    const tag = window.prompt("Тег (2–12 символов: латиница и цифры)", "");
-    if (!tag || !tag.trim()) return;
-    const theme = document.getElementById("faction-theme").value;
-    try {
-      await apiFetch("/api/factions", {
-        method: "POST",
-        body: JSON.stringify({ name: name.trim(), tag: tag.trim(), theme })
-      });
-      await loadCurrentUser();
-      await loadFactionsModalList();
-      document.getElementById("factions-status").textContent = "Фракция создана.";
-    } catch {
-      window.alert("Не удалось создать фракцию (тег занят или вы уже во фракции).");
-    }
+  document.getElementById("faction-theme").addEventListener("change", renderFactionsList);
+  document.getElementById("create-faction").addEventListener("click", () => {
+    document.getElementById("factions-status").textContent = "Создание фракции: лидер/офицеры/заявки/видимость и роли будут синхронизированы через backend.";
   });
 }
 
@@ -1345,6 +1256,8 @@ function selectOptionsFromObject(defs, selected) {
 
 function renderStellarisConstructor() {
   const content = document.getElementById("constructors-content");
+  content.classList.add("under-construction");
+  
   const mode = stellarisState.mode;
   const modeTabs = `
     <div class="template-actions">
@@ -1352,12 +1265,21 @@ function renderStellarisConstructor() {
       <button type="button" class="sections-btn ${mode === "empire" ? "primary" : ""}" data-stellaris-mode="empire">Empire Builder</button>
     </div>
   `;
+  
+  const overlay = `
+    <div class="construction-overlay">
+      <div class="construction-badge">Временно недоступно</div>
+      <div class="construction-text">Ведутся технические работы по обновлению модулей Stellaris</div>
+    </div>
+  `;
+
   if (mode === "ship") {
     const ship = stellarisState.ship;
     const sections = stellarisShipDefs.sections[ship.hull] || [];
     if (!sections.includes(ship.section)) ship.section = sections[0];
     const stats = calculateStellarisShipStats();
     content.innerHTML = `
+      ${overlay}
       <article class="constructor-card">
         <header><h3>Stellaris — Ship Designer</h3><small>Секции, вооружение, защита, энергия и стоимость</small></header>
         ${modeTabs}
@@ -1389,20 +1311,6 @@ function renderStellarisConstructor() {
         </div>
       </article>
     `;
-    content.querySelectorAll("[data-stellaris-mode]").forEach((button) => button.addEventListener("click", () => {
-      stellarisState.mode = button.dataset.stellarisMode;
-      renderStellarisConstructor();
-    }));
-    content.querySelector("#st-hull").addEventListener("change", (e) => { stellarisState.ship.hull = e.target.value; renderStellarisConstructor(); });
-    content.querySelector("#st-section").addEventListener("change", (e) => { stellarisState.ship.section = e.target.value; renderStellarisConstructor(); });
-    content.querySelector("#st-weapon").addEventListener("change", (e) => { stellarisState.ship.weapon = e.target.value; renderStellarisConstructor(); });
-    content.querySelector("#st-defense").addEventListener("change", (e) => { stellarisState.ship.defense = e.target.value; renderStellarisConstructor(); });
-    content.querySelector("#st-reactor").addEventListener("change", (e) => { stellarisState.ship.reactor = e.target.value; renderStellarisConstructor(); });
-    content.querySelector("#st-utility").addEventListener("input", (e) => {
-      stellarisState.ship.utilitySlots = Number(e.target.value || 1);
-      content.querySelector("#st-utility-value").textContent = `${stellarisState.ship.utilitySlots}`;
-      renderStellarisConstructor();
-    });
     return;
   }
 
@@ -1416,6 +1324,7 @@ function renderStellarisConstructor() {
   const civicOptions = Object.keys(stellarisEmpireDefs.civics).map((key) => `<option value="${key}" ${stellarisState.empire.civics.includes(key) ? "selected" : ""}>${key.replace(/_/g, " ")}</option>`).join("");
   const traitOptions = Object.keys(stellarisEmpireDefs.traits).map((key) => `<option value="${key}" ${stellarisState.empire.traits.includes(key) ? "selected" : ""}>${key.replace(/_/g, " ")}</option>`).join("");
   content.innerHTML = `
+    ${overlay}
     <article class="constructor-card">
       <header><h3>Stellaris — Empire Builder</h3><small>Origin, Ethics, Civics и черты расы</small></header>
       ${modeTabs}
@@ -1441,26 +1350,6 @@ function renderStellarisConstructor() {
       </div>
     </article>
   `;
-  content.querySelectorAll("[data-stellaris-mode]").forEach((button) => button.addEventListener("click", () => {
-    stellarisState.mode = button.dataset.stellarisMode;
-    renderStellarisConstructor();
-  }));
-  content.querySelector("#st-origin").addEventListener("change", (e) => { stellarisState.empire.origin = e.target.value; renderStellarisConstructor(); });
-  content.querySelectorAll("[data-ethic]").forEach((input) => {
-    input.addEventListener("change", () => {
-      const selected = [...content.querySelectorAll("[data-ethic]:checked")].map((el) => el.value).slice(0, 3);
-      stellarisState.empire.ethics = selected;
-      renderStellarisConstructor();
-    });
-  });
-  content.querySelector("#st-civics").addEventListener("change", (e) => {
-    stellarisState.empire.civics = [...e.target.selectedOptions].map((opt) => opt.value).slice(0, 2);
-    renderStellarisConstructor();
-  });
-  content.querySelector("#st-traits").addEventListener("change", (e) => {
-    stellarisState.empire.traits = [...e.target.selectedOptions].map((opt) => opt.value);
-    renderStellarisConstructor();
-  });
 }
 
 function renderConstructorsHub(activeKey = "hoi4") {
@@ -1469,6 +1358,8 @@ function renderConstructorsHub(activeKey = "hoi4") {
   const content = document.getElementById("constructors-content");
   const market = document.getElementById("constructors-market");
   
+  content.classList.remove("under-construction"); // Сбрасываем размытие по умолчанию
+
   tabs.innerHTML = Object.entries(constructorsCatalog).map(([key, entry]) => `
     <button type="button" class="sections-btn ${key === activeKey ? "primary" : ""}" data-constructor-tab="${key}">${entry.title}</button>
   `).join("");
@@ -1518,7 +1409,12 @@ function renderConstructorsHub(activeKey = "hoi4") {
 
 function renderCk3Constructor() {
   const content = document.getElementById("constructors-content");
+  content.classList.add("under-construction");
   content.innerHTML = `
+    <div class="construction-overlay">
+      <div class="construction-badge">Временно недоступно</div>
+      <div class="construction-text">Ведутся технические работы по обновлению модулей CK3</div>
+    </div>
     <article class="constructor-card">
       <header><h3>CK3 — Ruler Designer</h3><small>Выбор черт, образования и веры</small></header>
       <div class="constructor-grid">
@@ -1550,7 +1446,12 @@ function renderCk3Constructor() {
 
 function renderVic3Constructor() {
   const content = document.getElementById("constructors-content");
+  content.classList.add("under-construction");
   content.innerHTML = `
+    <div class="construction-overlay">
+      <div class="construction-badge">Временно недоступно</div>
+      <div class="construction-text">Ведутся технические работы по обновлению модулей Victoria 3</div>
+    </div>
     <article class="constructor-card">
       <header><h3>Victoria 3 — Law Maker</h3><small>Управление законами и институтами</small></header>
       <div class="constructor-grid">
@@ -2335,13 +2236,14 @@ async function loadCurrentUser() {
   try {
     currentUser = await apiFetch("/api/me");
     if (currentUser.authenticated && currentUser.balance === undefined) {
-      currentUser.balance = 100; // Стартовый баланс для демо
+      currentUser.balance = 1000; // Стартовый баланс 1000 SC
       currentUser.ownedItems = [];
       currentUser.pinnedAchievements = [];
       currentUser.friends = [];
+      currentUser.prefs = { favGame: "hoi4", bio: "" };
     }
   } catch {
-    currentUser = { authenticated: false, displayName: "Гость", balance: 0, ownedItems: [], pinnedAchievements: [], friends: [] };
+    currentUser = { authenticated: false, displayName: "Гость", balance: 0, ownedItems: [], pinnedAchievements: [], friends: [], prefs: { favGame: "hoi4", bio: "" } };
   }
   renderCurrentUser();
 }
@@ -2352,22 +2254,25 @@ function renderCurrentUser() {
   const loginBtn = document.getElementById("steam-login");
   const devLoginBtn = document.getElementById("dev-login");
   const logoutBtn = document.getElementById("logout");
-  const userLabel = document.getElementById("steam-user");
   const heroNickname = document.getElementById("hero-nickname");
-  const dot = document.getElementById("user-status-dot");
-  const label = document.getElementById("user-status-label");
+  const topUserProfile = document.getElementById("top-user-profile");
+  const topAvatar = document.getElementById("top-avatar");
 
   if (currentUser.authenticated) {
     loginBtn.classList.add("hidden");
     devLoginBtn.classList.add("hidden");
     logoutBtn.classList.remove("hidden");
-    userLabel.textContent = currentUser.displayName;
     heroNickname.textContent = currentUser.displayName;
     
-    const mode = currentUser.steamId ? "steam" : "dev";
-    dot.dataset.status = mode;
-    dot.title = mode === "steam" ? "Steam подключен" : "Dev вход";
-    label.textContent = mode === "steam" ? "Онлайн (Steam)" : "Онлайн (Dev)";
+    topUserProfile.classList.remove("hidden");
+    topAvatar.innerHTML = "";
+    if (currentUser.steamAvatarUrl) {
+      const img = document.createElement("img");
+      img.src = currentUser.steamAvatarUrl;
+      topAvatar.appendChild(img);
+    } else {
+      topAvatar.textContent = (currentUser.displayName || "ST").slice(0, 2).toUpperCase();
+    }
     
     userEconomy.classList.remove("hidden");
     animateNumber(balanceEl, currentUser.balance);
@@ -2375,12 +2280,9 @@ function renderCurrentUser() {
     loginBtn.classList.remove("hidden");
     devLoginBtn.classList.remove("hidden");
     logoutBtn.classList.add("hidden");
-    userLabel.textContent = "Гость";
     heroNickname.textContent = "Гость";
-    dot.dataset.status = "guest";
-    dot.title = "Гость";
-    label.textContent = "Оффлайн";
     
+    topUserProfile.classList.add("hidden");
     userEconomy.classList.add("hidden");
   }
 }
@@ -2476,7 +2378,7 @@ function setupAuth() {
   });
   document.getElementById("logout").addEventListener("click", async () => {
     await apiFetch("/api/auth/logout", { method: "POST" });
-    currentUser = { authenticated: false, displayName: "Гость", faction: null };
+    currentUser = { authenticated: false, displayName: "Гость" };
     activeTemplateId = null;
     steamAchievementSummary = null;
     selectedSteamGameSlug = null;
