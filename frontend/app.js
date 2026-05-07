@@ -1997,8 +1997,6 @@ function setupModdingModal() {
   });
 }
 
-function setupConstructorsModal() {
-
 const lineBattalionDefs = [
   { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, break: 4, def: 20, pierce: 1, armor: 0, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 }, resources: { steel: 2 }, year: 1936 },
   { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, break: 6, def: 10, pierce: 2, armor: 0, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 }, resources: { steel: 2, tungsten: 1 }, year: 1936 },
@@ -2163,6 +2161,7 @@ function applyResearchByType(unit, isSupport = false) {
 function renderPalette() {
   const battalionPalette = document.getElementById("battalion-palette");
   const supportPalette = document.getElementById("support-palette");
+  if (!battalionPalette || !supportPalette) return;
   
   const filteredLine = lineBattalionDefs.filter(u => !u.year || u.year <= divisionState.currentYear);
   const filteredSupport = supportCompanyDefs.filter(u => !u.year || u.year <= divisionState.currentYear);
@@ -2279,6 +2278,7 @@ function unitIconSvg(icon) {
 function renderDivisionGrid() {
   const grid = document.getElementById("division-grid");
   const supportGrid = document.getElementById("support-grid");
+  if (!grid || !supportGrid) return;
   grid.innerHTML = divisionState.lineSlots.map((unitId, index) => {
     const unit = unitId ? lineBattalionDefs.find((def) => def.id === unitId) : null;
     const unitType = unit ? unitTypeById[unit.id] || "support" : "";
@@ -2485,6 +2485,7 @@ function getPreviewDelta() {
 
 function renderAiComparison(stats) {
   const container = document.getElementById("division-ai-compare");
+  if (!container) return;
   if (!container.dataset.ready) {
     container.innerHTML = `
       <h3>Сравнение с AI</h3>
@@ -2539,6 +2540,8 @@ function calculateStatsForTemplate(line, support) {
 }
 
 function renderDivisionStats() {
+  const statsContainer = document.getElementById("division-stats");
+  if (!statsContainer) return;
   const stats = calculateDivisionStats();
   const validation = evaluateTemplate(stats);
   const warningLines = validation.warnings.map((item) => `<li>${item}</li>`).join("");
@@ -2548,7 +2551,7 @@ function renderDivisionStats() {
     : "";
   const whatIfOrg = Math.max(0, stats.org - 4);
   const whatIfSoft = stats.soft + 24;
-  document.getElementById("division-stats").innerHTML = `
+  statsContainer.innerHTML = `
     <div class="division-verdict verdict-${validation.verdictClass}">${validation.verdict}</div>
     <div class="division-fill-grid">
       <div>
@@ -3061,9 +3064,6 @@ setupModdingModal();
 setupShopModal();
 setupWikiModal();
 setupNewsFilters();
-renderPalette();
-renderDivisionGrid();
-renderDivisionStats();
 setupToolsModal();
 loadCurrentUser();
 loadNews();
