@@ -32,11 +32,6 @@ let activeTemplateId = null;
 let steamAchievementSummary = null;
 let selectedSteamGameSlug = null;
 let lastLeaderboardResponse = null;
-const mockFactions = [
-  { id: "1", name: "Стальной Легион", tag: "STL", totalAchievements: 1480, avgCompletion: 62, uniqueGames: 19, memberCount: 34, rank: 1, progress: 84 },
-  { id: "2", name: "Орден Маршалов", tag: "ORD", totalAchievements: 1325, avgCompletion: 58, uniqueGames: 16, memberCount: 29, rank: 2, progress: 73 },
-  { id: "3", name: "Северный Альянс", tag: "NTH", totalAchievements: 1186, avgCompletion: 55, uniqueGames: 15, memberCount: 26, rank: 3, progress: 65 }
-];
 const constructorsCatalog = {
   hoi4: {
     title: "Hearts of Iron IV",
@@ -779,35 +774,52 @@ function setupAchievementsModal() {
   });
 }
 
+function renderFactionLeaderboardRows(entries) {
+  const list = document.getElementById("leaderboard-list");
+  list.innerHTML = "";
+
+  if (!entries?.length) {
+    const empty = document.createElement("p");
+    empty.className = "steam-empty";
+    empty.textContent = "Фракций пока нет. Создайте первую во вкладке «Фракции».";
+    list.appendChild(empty);
+    return;
+  }
+
+  entries.forEach((faction) => {
+    const row = document.createElement("article");
+    row.className = "leaderboard-row";
+    row.innerHTML = `
+      <strong>#<span data-counter="${faction.rank}">0</span></strong>
+      <div>
+        <span>[${faction.tag}] ${faction.name}</span>
+        <small><span data-counter="${faction.totalAchievements}">0</span> достижений • <span data-counter="${faction.avgCompletion}">0</span>% средний прогресс • <span data-counter="${faction.uniqueGames}">0</span> тайтлов</small>
+      </div>
+      <div class="leaderboard-row-side">
+        <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> участников</span>
+        <button type="button" class="sections-btn" data-open-factions-from-lb>Во фракции</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+  runAnimatedCounters(list);
+  list.querySelectorAll("[data-open-factions-from-lb]").forEach((btn) => btn.addEventListener("click", () => {
+    document.getElementById("factions-modal")?.classList.remove("hidden");
+    loadFactionsModalList();
+  }));
+}
+
 function renderLeaderboard(response) {
-  lastLeaderboardResponse = response;
   const list = document.getElementById("leaderboard-list");
   list.innerHTML = "";
   const mode = document.getElementById("leaderboard-mode")?.value || "personal";
 
   if (mode === "faction") {
-    mockFactions.forEach((faction) => {
-      const row = document.createElement("article");
-      row.className = "leaderboard-row";
-      row.innerHTML = `
-        <strong>#<span data-counter="${faction.rank}">0</span></strong>
-        <div>
-          <span>[${faction.tag}] ${faction.name}</span>
-          <small><span data-counter="${faction.totalAchievements}">0</span> достижений • <span data-counter="${faction.avgCompletion}">0</span>% средний прогресс • <span data-counter="${faction.uniqueGames}">0</span> тайтлов</small>
-        </div>
-        <div class="leaderboard-row-side">
-          <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> участников</span>
-          <button type="button" class="sections-btn" data-open-factions>Открыть</button>
-        </div>
-      `;
-      list.appendChild(row);
-    });
-    runAnimatedCounters(list);
-    list.querySelectorAll("[data-open-factions]").forEach((btn) => btn.addEventListener("click", () => {
-      document.getElementById("factions-modal")?.classList.remove("hidden");
-    }));
+    renderFactionLeaderboardRows(response?.entries);
     return;
   }
+
+  lastLeaderboardResponse = response;
 
   if (!response.entries?.length) {
     const empty = document.createElement("p");
@@ -936,7 +948,8 @@ async function loadLeaderboard() {
   renderSkeleton(document.getElementById("leaderboard-list"), 6, true);
   try {
     if ((document.getElementById("leaderboard-mode")?.value || "personal") === "faction") {
-      renderLeaderboard({ entries: [] });
+      const response = await apiFetch(`/api/factions?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
+      renderLeaderboard(response);
     } else {
       const response = await apiFetch(`/api/steam/leaderboard?scope=${encodeURIComponent(scope)}&sort=${encodeURIComponent(sort)}`);
       renderLeaderboard(response);
@@ -962,6 +975,11 @@ function setupLeaderboardModal() {
   document.getElementById("leaderboard-scope").addEventListener("change", loadLeaderboard);
   document.getElementById("leaderboard-sort").addEventListener("change", loadLeaderboard);
   document.getElementById("compare-self").addEventListener("click", async () => {
+    if ((document.getElementById("leaderboard-mode")?.value || "personal") === "faction") {
+      document.getElementById("leaderboard-status").textContent =
+        "Сравнение по играм доступно только в личном рейтинге.";
+      return;
+    }
     if (!lastLeaderboardResponse?.entries?.length) {
       await loadLeaderboard();
     }
@@ -975,14 +993,38 @@ function setupLeaderboardModal() {
   });
 }
 
-function renderFactionsList() {
+let lastFactionModalEntries = [];
+
+function renderFactionsList(entries) {
   const list = document.getElementById("factions-list");
   const theme = document.getElementById("faction-theme").value;
   list.innerHTML = "";
-  const cards = [...mockFactions].map((faction) => {
-    const ratingScore = Math.round((faction.totalAchievements * 0.5) + (faction.avgCompletion * 0.3) + (faction.uniqueGames * 0.2));
+  if (!entries?.length) {
+    const empty = document.createElement("p");
+    empty.className = "steam-empty";
+    empty.textContent = "Пока нет фракций — нажмите «Создать фракцию».";
+    list.appendChild(empty);
+    return;
+  }
+  const myFactionId = currentUser.faction?.id != null ? String(currentUser.faction.id) : null;
+
+  entries.forEach((faction) => {
+    const ratingScore = Math.round(
+      (faction.totalAchievements * 0.5) + (faction.avgCompletion * 0.3) + (faction.uniqueGames * 0.2)
+    );
     const row = document.createElement("article");
     row.className = `leaderboard-row faction-theme-${theme}`;
+    const fid = String(faction.id);
+    let actionHtml = "";
+    if (myFactionId && myFactionId === fid) {
+      actionHtml = `<button type="button" class="sections-btn" data-leave-faction="${fid}">Покинуть</button>`;
+    } else if (myFactionId) {
+      actionHtml = `<button type="button" class="sections-btn" disabled title="Сначала выйдите из текущей фракции">Занято</button>`;
+    } else if (!currentUser.authenticated) {
+      actionHtml = `<button type="button" class="sections-btn" disabled>Войдите</button>`;
+    } else {
+      actionHtml = `<button type="button" class="sections-btn" data-join-faction="${fid}">Вступить</button>`;
+    }
     row.innerHTML = `
       <strong>#<span data-counter="${faction.rank}">0</span></strong>
       <div>
@@ -991,13 +1033,57 @@ function renderFactionsList() {
       </div>
       <div class="leaderboard-row-side">
         <span class="leaderboard-games"><span data-counter="${faction.memberCount}">0</span> мест</span>
-        <button type="button" class="sections-btn">Подать заявку</button>
+        ${actionHtml}
       </div>
     `;
-    return row;
+    list.appendChild(row);
   });
-  cards.forEach((card) => list.appendChild(card));
   runAnimatedCounters(list);
+  list.querySelectorAll("[data-join-faction]").forEach((btn) =>
+    btn.addEventListener("click", () => joinFaction(btn.dataset.joinFaction)));
+  list.querySelectorAll("[data-leave-faction]").forEach((btn) =>
+    btn.addEventListener("click", () => leaveFaction(btn.dataset.leaveFaction)));
+}
+
+async function joinFaction(id) {
+  try {
+    await apiFetch(`/api/factions/${id}/join`, { method: "POST" });
+    await loadCurrentUser();
+    await loadFactionsModalList();
+  } catch {
+    window.alert("Не удалось вступить во фракцию.");
+  }
+}
+
+async function leaveFaction(id) {
+  if (!window.confirm("Покинуть фракцию?")) return;
+  try {
+    await apiFetch(`/api/factions/${id}/leave`, { method: "POST" });
+    await loadCurrentUser();
+    await loadFactionsModalList();
+  } catch {
+    window.alert("Не удалось покинуть фракцию.");
+  }
+}
+
+async function loadFactionsModalList() {
+  const status = document.getElementById("factions-status");
+  const list = document.getElementById("factions-list");
+  list.innerHTML = `<p class="template-status">Загрузка...</p>`;
+  try {
+    const data = await apiFetch("/api/factions?scope=all&sort=achievements");
+    lastFactionModalEntries = data.entries || [];
+    renderFactionsList(lastFactionModalEntries);
+    if (currentUser.faction?.tag) {
+      status.textContent =
+        `Ваша фракция: [${currentUser.faction.tag}] ${currentUser.faction.name || ""} (${currentUser.faction.role}).`;
+    } else {
+      status.textContent = "Вступайте во фракцию или создайте свою. Статистика — по кэшу Steam участников.";
+    }
+  } catch {
+    status.textContent = "Не удалось загрузить фракции.";
+    list.innerHTML = "";
+  }
 }
 
 function setupFactionsModal() {
@@ -1005,16 +1091,38 @@ function setupFactionsModal() {
   const openModal = (event) => {
     event?.preventDefault();
     modal.classList.remove("hidden");
-    renderFactionsList();
-    document.getElementById("factions-status").textContent = "Фракции ранжируются еженедельно. Anti-abuse: 24ч после выхода, 72ч после исключения.";
+    loadFactionsModalList();
   };
   const closeModal = () => modal.classList.add("hidden");
   document.querySelectorAll("[data-open-factions]").forEach((btn) => btn.addEventListener("click", openModal));
   document.getElementById("factions-modal-close").addEventListener("click", closeModal);
   document.getElementById("factions-modal-close-bg").addEventListener("click", closeModal);
-  document.getElementById("faction-theme").addEventListener("change", renderFactionsList);
-  document.getElementById("create-faction").addEventListener("click", () => {
-    document.getElementById("factions-status").textContent = "Создание фракции: лидер/офицеры/заявки/видимость и роли будут синхронизированы через backend.";
+  document.getElementById("faction-theme").addEventListener("change", () => renderFactionsList(lastFactionModalEntries));
+  document.getElementById("create-faction").addEventListener("click", async () => {
+    if (!currentUser.authenticated) {
+      window.alert("Войдите через Steam или Dev-вход.");
+      return;
+    }
+    if (currentUser.faction) {
+      window.alert("Сначала покиньте текущую фракцию.");
+      return;
+    }
+    const name = window.prompt("Название фракции");
+    if (!name || !name.trim()) return;
+    const tag = window.prompt("Тег (2–12 символов: латиница и цифры)", "");
+    if (!tag || !tag.trim()) return;
+    const theme = document.getElementById("faction-theme").value;
+    try {
+      await apiFetch("/api/factions", {
+        method: "POST",
+        body: JSON.stringify({ name: name.trim(), tag: tag.trim(), theme })
+      });
+      await loadCurrentUser();
+      await loadFactionsModalList();
+      document.getElementById("factions-status").textContent = "Фракция создана.";
+    } catch {
+      window.alert("Не удалось создать фракцию (тег занят или вы уже во фракции).");
+    }
   });
 }
 
@@ -2053,7 +2161,7 @@ function setupAuth() {
   });
   document.getElementById("logout").addEventListener("click", async () => {
     await apiFetch("/api/auth/logout", { method: "POST" });
-    currentUser = { authenticated: false, displayName: "Гость" };
+    currentUser = { authenticated: false, displayName: "Гость", faction: null };
     activeTemplateId = null;
     steamAchievementSummary = null;
     selectedSteamGameSlug = null;
