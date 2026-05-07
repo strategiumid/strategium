@@ -21,6 +21,7 @@
       <a href="#" data-open-profile>Профиль</a>
       <a href="#" data-open-feed>Лента</a>
       <a href="#" data-open-constructors>Конструкторы</a>
+      <a href="#" data-open-modding>Моддинг</a>
       <a href="#" data-open-leaderboard>Лидерборд</a>
       <a href="#" data-open-factions>Фракции</a>
       <a href="#" data-open-wiki>База знаний</a>
@@ -273,6 +274,25 @@
         <div id="market-list" class="market-grid"></div>
       </div>
       <div id="constructors-content" class="constructors-content"></div>
+    </section>
+  </div>
+
+  <div id="modding-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modding-modal-title">
+    <div class="modal-backdrop" id="modding-modal-close-bg"></div>
+    <section class="modal-content full-modal">
+      <header class="modal-header">
+        <h2 id="modding-modal-title">Инструменты моддинга HOI4</h2>
+        <button id="modding-modal-close" class="modal-close" aria-label="Закрыть">×</button>
+      </header>
+      <div class="modal-subtitle">Создание стран, фокусов и отладка скриптов.</div>
+      <div id="modding-tabs" class="leaderboard-controls">
+        <button class="sections-btn active" data-mod-tab="country">Редактор стран</button>
+        <button class="sections-btn" data-mod-tab="focus">Дерево фокусов</button>
+        <button class="sections-btn" data-mod-tab="syntax">Проверка синтаксиса</button>
+        <button class="sections-btn" data-mod-tab="simulation">Симуляция</button>
+        <button class="sections-btn" data-mod-tab="logs">Парсер логов</button>
+      </div>
+      <div id="modding-content" class="modding-content"></div>
     </section>
   </div>
 

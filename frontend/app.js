@@ -1527,6 +1527,478 @@ function setupConstructorsModal() {
   document.getElementById("constructors-modal-close-bg").addEventListener("click", closeModal);
 }
 
+// --- Modding Tools ---
+
+function renderModdingContent() {
+  const content = document.getElementById("modding-content");
+  const tab = moddingState.activeTab;
+
+  if (tab === "country") {
+    content.innerHTML = `
+      <div class="mod-grid">
+        <div class="mod-panel">
+          <h3>Редактор страны</h3>
+          <div class="field-group">
+            <label>Тэг (TAG)</label>
+            <input type="text" id="mod-tag" value="${moddingState.country.tag}" maxlength="3">
+          </div>
+          <div class="field-group">
+            <label>Название</label>
+            <input type="text" id="mod-name" value="${moddingState.country.name}">
+          </div>
+          <div class="field-group">
+            <label>Цвет на карте</label>
+            <input type="color" id="mod-color" value="${moddingState.country.color}">
+          </div>
+          <div class="field-group">
+            <label>ID Столицы</label>
+            <input type="number" id="mod-capital" value="${moddingState.country.capital}">
+          </div>
+          <button class="sections-btn primary" id="mod-gen-country">Сгенерировать код</button>
+        </div>
+        <div class="mod-panel">
+          <h3>Результат (countries/*.txt)</h3>
+          <pre id="mod-output" class="mod-code-block"></pre>
+        </div>
+      </div>
+    `;
+    document.getElementById("mod-gen-country").addEventListener("click", generateCountryCode);
+  } else if (tab === "focus") {
+    content.innerHTML = `
+      <div class="mod-focus-editor">
+        <div class="mod-focus-toolbar">
+          <button class="sections-btn" id="mod-add-focus">Добавить фокус</button>
+          <select id="mod-focus-templates" class="division-select" style="width: auto;">
+            <option value="">Применить пресет ветки...</option>
+            ${moddingPresets.templates.map(t => `<option value="${t.id}">${t.name}</option>`).join("")}
+          </select>
+          <button class="sections-btn" id="mod-gen-focus">Экспорт дерева</button>
+          <button class="sections-btn" id="mod-clear-focus">Очистить</button>
+        </div>
+        <div class="mod-focus-layout">
+          <div id="mod-focus-canvas" class="mod-focus-canvas">
+            <div class="focus-grid-bg"></div>
+          </div>
+          <div id="mod-focus-inspector" class="mod-panel mod-inspector hidden">
+            <h3>Свойства фокуса</h3>
+            <div class="field-group">
+              <label>ID</label>
+              <input type="text" id="node-id">
+            </div>
+            <div class="field-group">
+              <label>Эффекты (код)</label>
+              <textarea id="node-effects" class="mod-textarea" style="height: 100px;"></textarea>
+            </div>
+            <div class="field-group">
+              <label>Быстрые пресеты эффектов</label>
+              <div class="mod-preset-grid">
+                ${moddingPresets.effects.map(e => `<button class="sections-btn" data-effect-code="${e.code}">${e.name}</button>`).join("")}
+              </div>
+            </div>
+            <button class="sections-btn primary" id="save-node">Применить</button>
+            <button class="sections-btn" id="delete-node">Удалить фокус</button>
+          </div>
+        </div>
+      </div>
+    `;
+    renderFocusTree();
+    document.getElementById("mod-add-focus").addEventListener("click", addFocusNode);
+    document.getElementById("mod-gen-focus").addEventListener("click", generateFocusCode);
+    document.getElementById("mod-clear-focus").addEventListener("click", () => {
+      moddingState.focusTree.nodes = [];
+      moddingState.selectedFocusIndex = null;
+      renderFocusTree();
+      document.getElementById("mod-focus-inspector").classList.add("hidden");
+    });
+    document.getElementById("mod-focus-templates").addEventListener("change", (e) => {
+      const template = moddingPresets.templates.find(t => t.id === e.target.value);
+      if (template) {
+        moddingState.focusTree.nodes.push(...JSON.parse(JSON.stringify(template.nodes)));
+        renderFocusTree();
+      }
+      e.target.value = "";
+    });
+  } else if (tab === "syntax") {
+    content.innerHTML = `
+      <div class="mod-syntax-editor">
+        <h3>Проверка синтаксиса</h3>
+        <div class="mod-syntax-toolbar">
+          <select id="mod-syntax-snippets" class="division-select" style="width: auto; margin-bottom: 10px;">
+            <option value="">Вставить сниппет...</option>
+            <option value="event">Шаблон события</option>
+            <option value="spirit">Шаблон нац. духа</option>
+            <option value="decision">Шаблон решения</option>
+          </select>
+        </div>
+        <textarea id="mod-syntax-input" placeholder="Вставьте код скрипта (события, фокусы)..." class="mod-textarea"></textarea>
+        <div id="mod-syntax-results" class="mod-results"></div>
+        <button class="sections-btn" id="mod-check-syntax">Проверить</button>
+      </div>
+    `;
+    document.getElementById("mod-check-syntax").addEventListener("click", checkSyntax);
+    document.getElementById("mod-syntax-snippets").addEventListener("change", (e) => {
+      const snippets = {
+        event: `country_event = {\n\tid = test.1\n\ttitle = test.1.t\n\tdesc = test.1.d\n\tpicture = GFX_report_event_generic\n\n\tis_triggered_only = yes\n\n\toption = {\n\t\tname = test.1.a\n\t\tadd_political_power = 10\n\t}\n}`,
+        spirit: `my_spirit = {\n\ticon = GFX_idea_generic_spirit\n\tmodifier = {\n\t\tstability_factor = 0.1\n\t\tindustrial_capacity_factory = 0.05\n\t}\n}`,
+        decision: `my_decision_category = {\n\tmy_decision = {\n\t\ticon = GFX_decision_generic\n\t\tcost = 50\n\t\tcomplete_effect = {\n\t\t\tadd_stability = 0.05\n\t\t}\n\t}\n}`
+      };
+      if (snippets[e.target.value]) {
+        const textarea = document.getElementById("mod-syntax-input");
+        textarea.value += (textarea.value ? "\n\n" : "") + snippets[e.target.value];
+      }
+      e.target.value = "";
+    });
+  } else if (tab === "logs") {
+    content.innerHTML = `
+      <div class="mod-log-parser">
+        <h3>Парсер логов (error.log)</h3>
+        <input type="file" id="mod-log-file" class="hidden">
+        <label for="mod-log-file" class="sections-btn">Загрузить error.log</label>
+        <div id="mod-log-results" class="mod-results"></div>
+      </div>
+    `;
+    document.getElementById("mod-log-file").addEventListener("change", parseErrorLog);
+  } else if (tab === "simulation") {
+    content.innerHTML = `
+      <div class="mod-simulation">
+        <h3>Симуляция триггеров</h3>
+        <div class="mod-grid">
+          <div class="mod-panel">
+            <div class="field-group">
+              <label>Страна</label>
+              <select id="sim-country" class="division-select">
+                <option value="GER">Германия (GER)</option>
+                <option value="SOV">СССР (SOV)</option>
+                <option value="USA">США (USA)</option>
+                <option value="ENG">Великобритания (ENG)</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Год</label>
+              <input type="number" id="sim-year" value="1939" min="1936" max="1950">
+            </div>
+            <div class="field-group">
+              <label>В войне?</label>
+              <input type="checkbox" id="sim-war">
+            </div>
+            <div class="field-group">
+              <label>Код триггера</label>
+              <textarea id="sim-trigger-code" class="mod-textarea" style="height: 100px;">has_war = yes
+year > 1938
+tag = GER</textarea>
+            </div>
+            <button class="sections-btn primary" id="run-sim">Запустить симуляцию</button>
+          </div>
+          <div class="mod-panel">
+            <h3>Результат симуляции</h3>
+            <div id="sim-results" class="mod-results"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById("run-sim").addEventListener("click", runSimulation);
+  }
+}
+
+function runSimulation() {
+  const country = document.getElementById("sim-country").value;
+  const year = parseInt(document.getElementById("sim-year").value);
+  const isAtWar = document.getElementById("sim-war").checked;
+  const code = document.getElementById("sim-trigger-code").value;
+  const results = document.getElementById("sim-results");
+
+  results.innerHTML = "Анализ триггеров...<br>";
+
+  const lines = code.split("\n");
+  let allPassed = true;
+
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    let passed = false;
+    let detail = "";
+
+    if (line.includes("has_war")) {
+      const val = line.split("=")[1].trim();
+      passed = (val === "yes") === isAtWar;
+      detail = `Состояние войны: ${isAtWar ? "да" : "нет"}`;
+    } else if (line.includes("year")) {
+      const parts = line.split(/[><=]/);
+      const val = parseInt(parts[parts.length - 1].trim());
+      if (line.includes(">")) passed = year > val;
+      else if (line.includes("<")) passed = year < val;
+      else passed = year === val;
+      detail = `Текущий год: ${year}`;
+    } else if (line.includes("tag")) {
+      const val = line.split("=")[1].trim();
+      passed = val === country;
+      detail = `Текущий тег: ${country}`;
+    } else {
+      detail = "Неизвестный триггер (пропущен)";
+      passed = true;
+    }
+
+    if (!passed) allPassed = false;
+    results.innerHTML += `<div class="${passed ? 'mod-success' : 'mod-error'}">
+      [${passed ? 'PASS' : 'FAIL'}] ${line.trim()} — ${detail}
+    </div>`;
+  });
+
+  results.innerHTML += `<hr><div style="font-weight: bold; font-size: 1rem; color: ${allPassed ? 'var(--green-achieved)' : 'var(--red-alert)'}">
+    ИТОГ: ${allPassed ? "ТРИГГЕР СРАБОТАЕТ" : "ТРИГГЕР НЕ СРАБОТАЕТ"}
+  </div>`;
+}
+
+function generateCountryCode() {
+  const tag = document.getElementById("mod-tag").value.toUpperCase();
+  const name = document.getElementById("mod-name").value;
+  const color = document.getElementById("mod-color").value;
+  const capital = document.getElementById("mod-capital").value;
+
+  // Convert hex to RGB for HOI4
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+
+  const code = `
+# Country file for ${tag} - ${name}
+graphical_culture = western_european
+graphical_culture_2d = western_european_2d
+
+color = { ${r} ${g} ${b} }
+
+set_technology = {
+	infantry_weapons = 1
+	interwar_artillery = 1
+}
+
+set_capital = ${capital}
+  `.trim();
+
+  document.getElementById("mod-output").textContent = code;
+}
+
+function renderFocusTree() {
+  const canvas = document.getElementById("mod-focus-canvas");
+  if (!canvas) return;
+  
+  const existingNodes = canvas.querySelectorAll(".focus-node");
+  existingNodes.forEach(n => n.remove());
+
+  moddingState.focusTree.nodes.forEach((node, index) => {
+    const el = document.createElement("div");
+    el.className = `focus-node ${moddingState.selectedFocusIndex === index ? "selected" : ""}`;
+    el.style.left = `${node.x}px`;
+    el.style.top = `${node.y}px`;
+    el.innerHTML = `
+      <div class="focus-node-title">${node.id}</div>
+      <div class="focus-node-coords">${node.x}, ${node.y}</div>
+    `;
+    
+    el.draggable = true;
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openFocusInspector(index);
+    });
+
+    el.addEventListener("dragend", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      node.x = Math.max(0, Math.round((e.clientX - rect.left - 60) / 10) * 10);
+      node.y = Math.max(0, Math.round((e.clientY - rect.top - 40) / 10) * 10);
+      renderFocusTree();
+      if (moddingState.selectedFocusIndex === index) {
+        openFocusInspector(index);
+      }
+    });
+    canvas.appendChild(el);
+  });
+}
+
+function openFocusInspector(index) {
+  moddingState.selectedFocusIndex = index;
+  const node = moddingState.focusTree.nodes[index];
+  const inspector = document.getElementById("mod-focus-inspector");
+  inspector.classList.remove("hidden");
+
+  document.getElementById("node-id").value = node.id;
+  document.getElementById("node-effects").value = node.effects;
+
+  // Render nodes with selection
+  renderFocusTree();
+
+  // Setup inspector buttons
+  const saveBtn = document.getElementById("save-node");
+  const deleteBtn = document.getElementById("delete-node");
+  
+  // Clone to remove old listeners
+  const newSaveBtn = saveBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+  const newDeleteBtn = deleteBtn.cloneNode(true);
+  deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
+  newSaveBtn.addEventListener("click", () => {
+    node.id = document.getElementById("node-id").value;
+    node.effects = document.getElementById("node-effects").value;
+    renderFocusTree();
+    showToast("Свойства фокуса сохранены", "success");
+  });
+
+  newDeleteBtn.addEventListener("click", () => {
+    moddingState.focusTree.nodes.splice(index, 1);
+    moddingState.selectedFocusIndex = null;
+    inspector.classList.add("hidden");
+    renderFocusTree();
+  });
+
+  // Setup preset buttons
+  document.querySelectorAll("[data-effect-code]").forEach(btn => {
+    btn.onclick = () => {
+      const textarea = document.getElementById("node-effects");
+      const current = textarea.value.trim();
+      textarea.value = current ? `${current}\n${btn.dataset.effectCode}` : btn.dataset.effectCode;
+    };
+  });
+}
+
+function addFocusNode() {
+  const id = prompt("Введите ID фокуса:", "new_focus");
+  if (!id) return;
+  moddingState.focusTree.nodes.push({
+    id,
+    x: 50,
+    y: 50,
+    effects: "add_political_power = 50"
+  });
+  renderFocusTree();
+}
+
+function generateFocusCode() {
+  let code = "focus_tree = {\n\tid = new_tree\n\t\n";
+  moddingState.focusTree.nodes.forEach(node => {
+    code += `\tfocus = {\n\t\tid = ${node.id}\n\t\tx = ${Math.floor(node.x / 50)}\n\t\ty = ${Math.floor(node.y / 50)}\n\t\tcompletion_reward = {\n\t\t\t${node.effects}\n\t\t}\n\t}\n\n`;
+  });
+  code += "}";
+  
+  const blob = new Blob([code], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "focus_tree.txt";
+  a.click();
+}
+
+function checkSyntax() {
+  const input = document.getElementById("mod-syntax-input").value;
+  const results = document.getElementById("mod-syntax-results");
+  results.innerHTML = "";
+
+  let openBrackets = 0;
+  let errors = [];
+
+  for (let i = 0; i < input.length; i++) {
+    if (input[i] === "{") openBrackets++;
+    if (input[i] === "}") openBrackets--;
+    if (openBrackets < 0) {
+      errors.push(`Лишняя закрывающая скобка на позиции ${i}`);
+      openBrackets = 0;
+    }
+  }
+
+  if (openBrackets > 0) {
+    errors.push(`Не закрыто скобок: ${openBrackets}`);
+  }
+
+  // Simple token check
+  const tokens = input.split(/\s+/);
+  const knownTokens = ["focus", "id", "completion_reward", "add_political_power", "set_technology", "country_event"];
+  tokens.forEach(t => {
+    if (t.includes("=") && !knownTokens.some(kt => t.startsWith(kt)) && t.length > 2) {
+      // Very basic check for potential typos in common commands
+      // results.innerHTML += `<div class="mod-warn">Предупреждение: возможный неизвестный токен "${t.split('=')[0]}"</div>`;
+    }
+  });
+
+  if (errors.length === 0) {
+    results.innerHTML = '<div class="mod-success">Синтаксических ошибок не найдено (базовая проверка).</div>';
+  } else {
+    errors.forEach(e => {
+      results.innerHTML += `<div class="mod-error">${e}</div>`;
+    });
+  }
+}
+
+function parseErrorLog(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const results = document.getElementById("mod-log-results");
+  results.innerHTML = "Парсинг...";
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    const lines = content.split("\n");
+    let output = "";
+
+    const commonErrors = [
+      { pattern: "Unexpected token", solution: "Проверьте закрывающие скобки } или опечатки в командах." },
+      { pattern: "Unknown trait", solution: "Черта лидера не определена в файлах traits." },
+      { pattern: "Malformed token", solution: "Ошибка в структуре команды, возможно пропущен '='." },
+      { pattern: "Failed to create", solution: "Ошибка графики или путей к файлам .dds/.tga." }
+    ];
+
+    lines.forEach(line => {
+      if (line.includes("[") && line.includes("]")) {
+        let type = "info";
+        let solution = "";
+        
+        commonErrors.forEach(ce => {
+          if (line.includes(ce.pattern)) {
+            type = "error";
+            solution = ce.solution;
+          }
+        });
+
+        output += `<div class="mod-log-line ${type}">
+          <span class="log-text">${line}</span>
+          ${solution ? `<div class="log-solution">Решение: ${solution}</div>` : ""}
+        </div>`;
+      }
+    });
+
+    results.innerHTML = output || "Ошибок не найдено.";
+  };
+  reader.readAsText(file);
+}
+
+function setupModdingModal() {
+  const modal = document.getElementById("modding-modal");
+  const openModal = (event) => {
+    event?.preventDefault();
+    modal.classList.remove("hidden");
+    renderModdingContent();
+  };
+  const closeModal = () => modal.classList.add("hidden");
+  
+  document.querySelectorAll("[data-open-modding]").forEach((btn) => btn.addEventListener("click", openModal));
+  document.getElementById("modding-modal-close").addEventListener("click", closeModal);
+  document.getElementById("modding-modal-close-bg").addEventListener("click", closeModal);
+
+  document.querySelectorAll("[data-mod-tab]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-mod-tab]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      moddingState.activeTab = btn.dataset.modTab;
+      renderModdingContent();
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+}
+
+function setupConstructorsModal() {
+
 const lineBattalionDefs = [
   { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, break: 4, def: 20, pierce: 1, armor: 0, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 }, resources: { steel: 2 }, year: 1936 },
   { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, break: 6, def: 10, pierce: 2, armor: 0, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 }, resources: { steel: 2, tungsten: 1 }, year: 1936 },
@@ -1587,6 +2059,45 @@ const divisionState = {
   },
   doctrineLevel: 0,
   currentYear: 1936
+};
+
+const moddingState = {
+  activeTab: "country",
+  selectedFocusIndex: null,
+  country: {
+    tag: "NEW",
+    name: "New Country",
+    color: "#ffffff",
+    capital: "1",
+    techs: [],
+    spirits: []
+  },
+  focusTree: {
+    nodes: []
+  }
+};
+
+const moddingPresets = {
+  effects: [
+    { id: "pp_50", name: "Политволя +50", code: "add_political_power = 50" },
+    { id: "civ_factory", name: "Гражд. завод", code: "add_offsite_civilian_factories = 1" },
+    { id: "mil_factory", name: "Военный завод", code: "add_offsite_ic = 1" },
+    { id: "stability_5", name: "Стабильность +5%", code: "add_stability = 0.05" },
+    { id: "war_support_5", name: "Поддержка войны +5%", code: "add_war_support = 0.05" },
+    { id: "research_slot", name: "Слот исследования", code: "add_research_slot = 1" },
+    { id: "annex_country", name: "Аннексия (TAG)", code: "annex_country = { target = TAG transfer_troops = yes }" },
+    { id: "add_ideas", name: "Нац. дух", code: "add_ideas = my_national_spirit" }
+  ],
+  templates: [
+    { id: "industry_path", name: "Ветка индустрии", nodes: [
+      { id: "ind_1", x: 100, y: 50, effects: "add_political_power = 25" },
+      { id: "ind_2", x: 100, y: 150, effects: "add_offsite_civilian_factories = 2" }
+    ]},
+    { id: "army_path", name: "Ветка армии", nodes: [
+      { id: "mil_1", x: 300, y: 50, effects: "add_stability = 0.05" },
+      { id: "mil_2", x: 300, y: 150, effects: "army_experience = 20" }
+    ]}
+  ]
 };
 
 const optimalWidths = new Set([20, 21, 27, 42, 45]);
@@ -2546,6 +3057,7 @@ setupSettingsModal();
 setupLeaderboardModal();
 setupFactionsModal();
 setupConstructorsModal();
+setupModdingModal();
 setupShopModal();
 setupWikiModal();
 setupNewsFilters();

@@ -996,6 +996,210 @@ body::before {
   transform: scale(1.05);
 }
 
+/* Modding Tools Styles */
+.mod-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.mod-panel {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line);
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.mod-panel h3 {
+  margin: 0 0 15px 0;
+  font-size: 0.85rem;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.mod-code-block {
+  background: #05070a;
+  color: #a0aec0;
+  padding: 15px;
+  border: 1px solid #1a2533;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  min-height: 300px;
+  max-height: 500px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.mod-focus-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+  height: 600px;
+}
+
+.mod-focus-toolbar {
+  display: flex;
+  gap: 10px;
+}
+
+.mod-focus-canvas {
+  flex: 1;
+  background: #07090d;
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+
+.focus-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(33, 42, 56, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(33, 42, 56, 0.5) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+}
+
+.focus-node {
+  position: absolute;
+  width: 120px;
+  height: 80px;
+  background: linear-gradient(180deg, #1a2637, #0d141f);
+  border: 1px solid var(--gold);
+  color: #fff;
+  padding: 10px;
+  font-size: 0.7rem;
+  cursor: grab;
+  z-index: 5;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border-radius: 3px;
+  transition: transform 0.1s;
+}
+
+.focus-node:active {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+.focus-node-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.focus-node-coords {
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.mod-textarea {
+  width: 100%;
+  height: 300px;
+  background: #05070a;
+  border: 1px solid var(--line);
+  color: #a0aec0;
+  padding: 15px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.8rem;
+  margin-bottom: 15px;
+  resize: vertical;
+}
+
+.mod-results {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  padding: 15px;
+  margin-bottom: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.mod-error {
+  color: var(--red-alert);
+  margin-bottom: 5px;
+  font-size: 0.75rem;
+}
+
+.mod-success {
+  color: var(--green-achieved);
+  font-size: 0.75rem;
+}
+
+.mod-log-line {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-family: 'Consolas', monospace;
+  font-size: 0.7rem;
+}
+
+.mod-log-line.error {
+  background: rgba(194, 90, 90, 0.1);
+  border-left: 3px solid var(--red-alert);
+}
+
+.log-text {
+  color: #cbd5e0;
+}
+
+.log-solution {
+  margin-top: 4px;
+  color: var(--gold);
+  font-style: italic;
+  font-size: 0.65rem;
+}
+
+.mod-syntax-editor, .mod-log-parser {
+  margin-top: 15px;
+}
+
+.mod-results hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 10px 0;
+}
+
+.mod-focus-layout {
+  display: flex;
+  gap: 15px;
+  flex: 1;
+  min-height: 0;
+}
+
+.mod-inspector {
+  width: 300px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mod-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.mod-preset-grid .sections-btn {
+  font-size: 0.65rem;
+  padding: 4px;
+  text-align: center;
+}
+
+.focus-node.selected {
+  border-width: 2px;
+  box-shadow: 0 0 15px var(--gold);
+}
+
 .top-avatar {
   width: 32px;
   height: 32px;
