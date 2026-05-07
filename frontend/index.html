@@ -21,7 +21,7 @@
 
   <header class="topbar container">
     <nav class="top-nav">
-      <a href="#">Главная</a>
+      <a href="#" class="active">Главная</a>
       <a href="#" data-open-profile>Профиль</a>
       <a href="#" data-open-feed>Лента</a>
       <a href="#" data-open-constructors>Конструкторы</a>
@@ -45,7 +45,6 @@
           <span class="notify-badge">3</span>
         </button>
         <button id="quick-messages" class="quick-icon-btn" type="button" title="Сообщения">✉</button>
-        <button id="quick-search" class="quick-icon-btn" type="button" title="Поиск">⌕</button>
       </div>
       <button id="steam-login" class="auth-btn steam-btn">
         <span class="steam-icon" aria-hidden="true">
@@ -145,7 +144,23 @@
           <p id="profile-vk">VK не привязан</p>
         </div>
       </div>
+      <div class="profile-showcase">
+        <h3>Витрина достижений</h3>
+        <div id="achievement-showcase-list" class="showcase-grid">
+          <div class="showcase-slot empty">Свободный слот</div>
+          <div class="showcase-slot empty">Свободный слот</div>
+          <div class="showcase-slot empty">Свободный слот</div>
+        </div>
+      </div>
       <div id="profile-stats" class="profile-stats"></div>
+      <div class="profile-friends">
+        <h3>Друзья</h3>
+        <div class="friends-search">
+          <input type="text" id="friend-search-input" placeholder="ID или ник друга...">
+          <button class="sections-btn" id="add-friend-btn">Добавить</button>
+        </div>
+        <div id="friends-list" class="friends-list"></div>
+      </div>
       <div id="profile-status" class="template-status"></div>
     </section>
   </div>
@@ -209,6 +224,17 @@
       </header>
       <div class="modal-subtitle">Единый центр конструкторов для Hearts of Iron IV и Stellaris.</div>
       <div id="constructors-tabs" class="leaderboard-controls"></div>
+      <div id="constructors-market" class="template-market-container hidden">
+        <header class="market-header">
+          <h3>Биржа шаблонов</h3>
+          <div class="market-filters">
+            <button class="sections-btn active" data-market-filter="all">Все</button>
+            <button class="sections-btn" data-market-filter="hoi4">HOI4</button>
+            <button class="sections-btn" data-market-filter="stellaris">Stellaris</button>
+          </div>
+        </header>
+        <div id="market-list" class="market-grid"></div>
+      </div>
       <div id="constructors-content" class="constructors-content"></div>
     </section>
   </div>
@@ -321,5 +347,11 @@
     <button type="button" class="mobile-nav-item" data-open-profile title="Профиль">◉</button>
   </nav>
   <script src="./app.js"></script>
+  <div id="toast-container"></div>
+  <div id="strategium-tooltip" class="strategium-tooltip">
+    <div class="tooltip-title" id="tooltip-title"></div>
+    <div class="tooltip-body" id="tooltip-body"></div>
+    <div class="tooltip-desc" id="tooltip-desc"></div>
+  </div>
 </body>
 </html>

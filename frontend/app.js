@@ -40,6 +40,18 @@ const constructorsCatalog = {
   stellaris: {
     title: "Stellaris",
     subtitle: "Ship Designer + Empire Builder"
+  },
+  ck3: {
+    title: "Crusader Kings III",
+    subtitle: "Конструктор правителя: черты, вера, культура"
+  },
+  vic3: {
+    title: "Victoria 3",
+    subtitle: "Конструктор законов и институтов"
+  },
+  market: {
+    title: "Биржа",
+    subtitle: "Лучшие шаблоны сообщества"
   }
 };
 let constructorsActiveTab = "hoi4";
@@ -219,6 +231,62 @@ function animateNumber(node, target) {
   };
   requestAnimationFrame(step);
 }
+
+function showToast(message, type = "info", title = "Уведомление") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <div class="toast-header">${title}</div>
+    <div class="toast-body">${message}</div>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("toast-out");
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+const tooltip = {
+  el: null,
+  title: null,
+  body: null,
+  desc: null,
+  init() {
+    this.el = document.getElementById("strategium-tooltip");
+    this.title = document.getElementById("tooltip-title");
+    this.body = document.getElementById("tooltip-body");
+    this.desc = document.getElementById("tooltip-desc");
+  },
+  show(title, stats, description, x, y) {
+    if (!this.el) this.init();
+    this.title.textContent = title;
+    this.desc.textContent = description;
+    this.body.innerHTML = Object.entries(stats).map(([label, value]) => `
+      <div class="tooltip-stat"><span>${label}:</span> <strong>${value}</strong></div>
+    `).join("");
+    
+    this.el.style.display = "block";
+    const width = this.el.offsetWidth;
+    const height = this.el.offsetHeight;
+    
+    let posX = x + 15;
+    let posY = y + 15;
+    
+    if (posX + width > window.innerWidth) posX = x - width - 15;
+    if (posY + height > window.innerHeight) posY = y - height - 15;
+    
+    this.el.style.left = `${posX}px`;
+    this.el.style.top = `${posY}px`;
+  },
+  hide() {
+    if (this.el) this.el.style.display = "none";
+  }
+};
 
 function runAnimatedCounters(scope) {
   scope.querySelectorAll("[data-counter]").forEach((node) => {
@@ -477,6 +545,59 @@ function renderProfileBase(user) {
   } else {
     avatar.textContent = (user.displayName || "ST").slice(0, 2).toUpperCase();
   }
+  
+  renderPinnedAchievements();
+  renderFriends();
+}
+
+function renderPinnedAchievements() {
+  const container = document.getElementById("achievement-showcase-list");
+  if (!container) return;
+  
+  const pinned = currentUser.pinnedAchievements || [];
+  container.innerHTML = "";
+  
+  for (let i = 0; i < 3; i++) {
+    const slot = document.createElement("div");
+    if (pinned[i]) {
+      slot.className = "showcase-slot filled";
+      slot.innerHTML = `<img src="${pinned[i].iconUrl}" title="${pinned[i].name}">`;
+      slot.addEventListener("click", () => {
+        currentUser.pinnedAchievements.splice(i, 1);
+        renderPinnedAchievements();
+        showToast("Достижение убрано из витрины", "info");
+      });
+    } else {
+      slot.className = "showcase-slot empty";
+      slot.textContent = "Свободный слот";
+    }
+    container.appendChild(slot);
+  }
+}
+
+function renderFriends() {
+  const list = document.getElementById("friends-list");
+  if (!list) return;
+  
+  const friends = currentUser.friends || [];
+  list.innerHTML = friends.length ? "" : '<div class="template-status">Список друзей пуст</div>';
+  
+  friends.forEach((friend, index) => {
+    const item = document.createElement("div");
+    item.className = "friend-item";
+    item.innerHTML = `
+      <div class="friend-info">
+        <div class="friend-avatar">${friend.name.slice(0, 2).toUpperCase()}</div>
+        <span class="friend-name">${friend.name}</span>
+      </div>
+      <button class="sections-btn" data-remove-friend="${index}">×</button>
+    `;
+    item.querySelector("button").addEventListener("click", () => {
+      currentUser.friends.splice(index, 1);
+      renderFriends();
+    });
+    list.appendChild(item);
+  });
 }
 
 function renderProfileStats(summary) {
@@ -547,6 +668,19 @@ function setupProfileModal() {
     await loadProfile();
   };
   const closeModal = () => modal.classList.add("hidden");
+  
+  document.getElementById("add-friend-btn")?.addEventListener("click", () => {
+    const input = document.getElementById("friend-search-input");
+    const name = input.value.trim();
+    if (!name) return;
+    
+    if (!currentUser.friends) currentUser.friends = [];
+    currentUser.friends.push({ name });
+    input.value = "";
+    renderFriends();
+    showToast(`Запрос отправлен ${name}!`, "success", "Друзья");
+  });
+
   document.querySelectorAll("[data-open-profile]").forEach((button) => {
     button.addEventListener("click", openModal);
   });
@@ -694,6 +828,32 @@ function renderSteamAchievements(game) {
     description.textContent = achievement.description || "Описание скрыто в Steam.";
     body.append(name, description);
 
+    if (achievement.achieved) {
+      const pinBtn = document.createElement("button");
+      pinBtn.className = "pin-achievement-btn";
+      pinBtn.innerHTML = "📌";
+      pinBtn.title = "Закрепить в профиле";
+      pinBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!currentUser.pinnedAchievements) currentUser.pinnedAchievements = [];
+        if (currentUser.pinnedAchievements.length >= 3) {
+          showToast("Максимум 3 достижения!", "warning");
+          return;
+        }
+        if (currentUser.pinnedAchievements.some(a => a.apiName === achievement.apiName)) {
+          showToast("Уже закреплено!", "info");
+          return;
+        }
+        currentUser.pinnedAchievements.push({
+          apiName: achievement.apiName,
+          name: achievement.name,
+          iconUrl: achievement.iconUrl
+        });
+        showToast("Достижение закреплено в профиле!", "success");
+      });
+      item.appendChild(pinBtn);
+    }
+
     const state = document.createElement("span");
     state.className = "steam-achievement-state";
     state.textContent = achievement.achieved ? "Получено" : "Не получено";
@@ -738,6 +898,7 @@ async function loadSteamAchievements() {
 async function refreshSteamStats() {
   if (!currentUser.authenticated || !currentUser.steamId) {
     setAchievementsStatus("Сначала войдите через Steam.");
+    showToast("Необходимо войти через Steam для обновления статистики.", "warning");
     return;
   }
 
@@ -747,10 +908,13 @@ async function refreshSteamStats() {
   try {
     const result = await apiFetch("/api/steam/stats/refresh", { method: "POST" });
     setAchievementsStatus(`Обновлено игр: ${result.refreshedGames}.`);
-    addReward(10 * (result.refreshedGames || 1), "Обновление статистики Steam");
+    const reward = 10 * (result.refreshedGames || 1);
+    addReward(reward, "Обновление статистики Steam");
+    showToast(`Статистика обновлена! Получено ${reward} SC.`, "success", "Steam Sync");
     await loadSteamAchievements();
   } catch {
     setAchievementsStatus("Не удалось обновить статистику. Проверьте Steam privacy и STEAM_WEB_API_KEY.");
+    showToast("Ошибка при синхронизации со Steam.", "error");
   } finally {
     button.disabled = false;
   }
@@ -1303,36 +1467,144 @@ function renderConstructorsHub(activeKey = "hoi4") {
   constructorsActiveTab = activeKey;
   const tabs = document.getElementById("constructors-tabs");
   const content = document.getElementById("constructors-content");
+  const market = document.getElementById("constructors-market");
+  
   tabs.innerHTML = Object.entries(constructorsCatalog).map(([key, entry]) => `
     <button type="button" class="sections-btn ${key === activeKey ? "primary" : ""}" data-constructor-tab="${key}">${entry.title}</button>
   `).join("");
-  const active = constructorsCatalog[activeKey];
-  if (activeKey === "stellaris") {
-    renderStellarisConstructor();
+  
+  market.classList.toggle("hidden", activeKey !== "market");
+  content.classList.toggle("hidden", activeKey === "market");
+  
+  if (activeKey === "market") {
+    renderMarket();
     tabs.querySelectorAll("[data-constructor-tab]").forEach((button) => {
       button.addEventListener("click", () => renderConstructorsHub(button.dataset.constructorTab));
     });
     return;
   }
-  content.innerHTML = `
-    <article class="constructor-card">
-      <header>
-        <h3>${active.title}</h3>
-        <small>${active.subtitle}</small>
-      </header>
-      <div class="template-actions">
-        <button type="button" class="sections-btn primary" id="open-hoi4-live">Открыть конструктор HOI4</button>
-      </div>
-      <div class="template-status">Конструктор HOI4 открыт как отдельный рабочий режим.</div>
-    </article>
-  `;
+  
+  const active = constructorsCatalog[activeKey];
+  if (activeKey === "stellaris") {
+    renderStellarisConstructor();
+  } else if (activeKey === "ck3") {
+    renderCk3Constructor();
+  } else if (activeKey === "vic3") {
+    renderVic3Constructor();
+  } else {
+    content.innerHTML = `
+      <article class="constructor-card">
+        <header>
+          <h3>${active.title}</h3>
+          <small>${active.subtitle}</small>
+        </header>
+        <div class="template-actions">
+          <button type="button" class="sections-btn primary" id="open-hoi4-live">Открыть конструктор HOI4</button>
+        </div>
+        <div class="template-status">Конструктор HOI4 открыт как отдельный рабочий режим.</div>
+      </article>
+    `;
+    document.getElementById("open-hoi4-live")?.addEventListener("click", () => {
+      document.getElementById("constructors-modal")?.classList.add("hidden");
+      document.getElementById("tools-modal")?.classList.remove("hidden");
+      loadTemplates();
+    });
+  }
+  
   tabs.querySelectorAll("[data-constructor-tab]").forEach((button) => {
     button.addEventListener("click", () => renderConstructorsHub(button.dataset.constructorTab));
   });
-  document.getElementById("open-hoi4-live")?.addEventListener("click", () => {
-    document.getElementById("constructors-modal")?.classList.add("hidden");
-    document.getElementById("tools-modal")?.classList.remove("hidden");
-    loadTemplates();
+}
+
+function renderCk3Constructor() {
+  const content = document.getElementById("constructors-content");
+  content.innerHTML = `
+    <article class="constructor-card">
+      <header><h3>CK3 — Ruler Designer</h3><small>Выбор черт, образования и веры</small></header>
+      <div class="constructor-grid">
+        <div class="constructor-module">
+          <label class="division-inline-label">Образование</label>
+          <select class="division-select">
+            <option>Умелый управленец</option>
+            <option>Блестящий стратег</option>
+            <option>Мастер интриг</option>
+          </select>
+          <label class="division-inline-label">Черты личности</label>
+          <div class="stellaris-check-grid">
+            <label class="stellaris-check"><input type="checkbox"> Амбициозный</label>
+            <label class="stellaris-check"><input type="checkbox"> Справедливый</label>
+            <label class="stellaris-check"><input type="checkbox"> Гневный</label>
+          </div>
+        </div>
+        <div class="constructor-module">
+          <strong>Показатели</strong>
+          <p>Дипломатия: <strong>12</strong></p>
+          <p>Военное дело: <strong>15</strong></p>
+          <p>Управление: <strong>10</strong></p>
+          <button class="sections-btn primary" style="width:100%;margin-top:10px">Сохранить правителя</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderVic3Constructor() {
+  const content = document.getElementById("constructors-content");
+  content.innerHTML = `
+    <article class="constructor-card">
+      <header><h3>Victoria 3 — Law Maker</h3><small>Управление законами и институтами</small></header>
+      <div class="constructor-grid">
+        <div class="constructor-module">
+          <label class="division-inline-label">Структура власти</label>
+          <select class="division-select">
+            <option>Монархия</option>
+            <option>Республика</option>
+            <option>Теократия</option>
+          </select>
+          <label class="division-inline-label">Экономика</label>
+          <select class="division-select">
+            <option>Laissez-Faire</option>
+            <option>Интервенционизм</option>
+            <option>Аграризм</option>
+          </select>
+        </div>
+        <div class="constructor-module">
+          <strong>Эффекты</strong>
+          <p>Легитимность: <strong>75%</strong></p>
+          <p>Радикализм: <strong>-5%</strong></p>
+          <button class="sections-btn primary" style="width:100%;margin-top:10px">Принять законы</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+const mockMarketTemplates = [
+  { id: 101, type: "hoi4", name: "7/2 Meta Infantry", author: "PdxPro", likes: 125, stats: "Width: 21, Org: 45, Soft: 120" },
+  { id: 102, type: "stellaris", name: "Void Dweller Mega-Corp", author: "SpaceBaron", likes: 89, stats: "Econ: +25%, Tech: +15%" },
+  { id: 103, type: "hoi4", name: "Space Marine 1941", author: "GeneralG", likes: 210, stats: "Width: 42, Armor: 15, Pierce: 12" }
+];
+
+function renderMarket() {
+  const list = document.getElementById("market-list");
+  list.innerHTML = "";
+  
+  mockMarketTemplates.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "market-item";
+    card.innerHTML = `
+      <div class="market-item-header">
+        <span class="market-item-title">${item.name}</span>
+        <span class="market-item-tag">${item.type}</span>
+      </div>
+      <div class="market-item-meta">Автор: ${item.author}</div>
+      <div class="market-item-stats">${item.stats}</div>
+      <div class="market-item-actions">
+        <button class="market-like-btn">❤️ ${item.likes}</button>
+        <button class="sections-btn">Копировать</button>
+      </div>
+    `;
+    list.appendChild(card);
   });
 }
 
@@ -1350,23 +1622,23 @@ function setupConstructorsModal() {
 }
 
 const lineBattalionDefs = [
-  { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 } },
-  { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 } },
-  { id: "motorized", name: "Мотопехота", width: 2, hp: 24, org: 58, soft: 14, hard: 2, icon: "truck", role: "Быстрая пехота для мобильных операций.", equipment: { infantry: 800 } },
-  { id: "mechanized", name: "Мех. пехота", width: 2, hp: 30, org: 52, soft: 18, hard: 6, icon: "mech", role: "Более крепкая мобильная линия.", equipment: { infantry: 700 } },
-  { id: "medium_tank", name: "Средние танки", width: 2, hp: 18, org: 30, soft: 26, hard: 24, icon: "tank", role: "Прорыв и бронебойность, требует пехотного ядра.", equipment: { infantry: 300 } },
-  { id: "aa_line", name: "Линейное ПВО", width: 1, hp: 10, org: 20, soft: 3, hard: 12, icon: "aa", role: "Защита от авиации и часть hard attack.", equipment: { artillery: 12 } },
-  { id: "at_line", name: "Линейное ПТО", width: 1, hp: 10, org: 20, soft: 2, hard: 20, icon: "at", role: "Контр-танковая роль на линии.", equipment: { artillery: 12 } }
+  { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, break: 4, def: 20, pierce: 1, armor: 0, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 } },
+  { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, break: 6, def: 10, pierce: 2, armor: 0, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 } },
+  { id: "motorized", name: "Мотопехота", width: 2, hp: 24, org: 58, soft: 14, hard: 2, break: 8, def: 18, pierce: 1, armor: 0, icon: "truck", role: "Быстрая пехота для мобильных операций.", equipment: { infantry: 800 } },
+  { id: "mechanized", name: "Мех. пехота", width: 2, hp: 30, org: 52, soft: 18, hard: 6, break: 12, def: 24, pierce: 3, armor: 10, icon: "mech", role: "Более крепкая мобильная линия.", equipment: { infantry: 700 } },
+  { id: "medium_tank", name: "Средние танки", width: 2, hp: 18, org: 30, soft: 26, hard: 24, break: 42, def: 14, pierce: 35, armor: 60, icon: "tank", role: "Прорыв и бронебойность, требует пехотного ядра.", equipment: { infantry: 300 } },
+  { id: "aa_line", name: "Линейное ПВО", width: 1, hp: 10, org: 20, soft: 3, hard: 12, break: 2, def: 8, pierce: 20, armor: 0, icon: "aa", role: "Защита от авиации и часть hard attack.", equipment: { artillery: 12 } },
+  { id: "at_line", name: "Линейное ПТО", width: 1, hp: 10, org: 20, soft: 2, hard: 20, break: 1, def: 6, pierce: 50, armor: 0, icon: "at", role: "Контр-танковая роль на линии.", equipment: { artillery: 12 } }
 ];
 
 const supportCompanyDefs = [
-  { id: "eng", name: "Инженеры", org: 2, soft: 2, hard: 0, icon: "eng", role: "Бонусы в обороне и на переправах.", equipment: { support: 30 } },
-  { id: "recon", name: "Разведка", org: 1, soft: 1, hard: 0, icon: "recon", role: "Инициатива и выбор тактики.", equipment: { support: 30 } },
-  { id: "sup_art", name: "Поддержка арт.", org: 0, soft: 12, hard: 1, icon: "art", role: "Дешевый рост soft attack.", equipment: { support: 30, artillery: 24 } },
-  { id: "log", name: "Логистика", org: 0, soft: 0, hard: 0, icon: "log", role: "Снижение расхода снабжения.", equipment: { support: 30 } },
-  { id: "signal", name: "Связь", org: 0, soft: 0, hard: 0, icon: "signal", role: "Быстрое вступление в бой и инициатива.", equipment: { support: 30 } },
-  { id: "maintenance", name: "Ремрота", org: 0, soft: 0, hard: 0, icon: "wrench", role: "Надежность и захват техники.", equipment: { support: 30 } },
-  { id: "aa", name: "Поддержка ПВО", org: 0, soft: 4, hard: 8, icon: "aa", role: "ПВО в слоте поддержки.", equipment: { support: 30, artillery: 12 } }
+  { id: "eng", name: "Инженеры", org: 2, soft: 2, hard: 0, break: 2, def: 15, pierce: 0, armor: 0, icon: "eng", role: "Бонусы в обороне и на переправах.", equipment: { support: 30 } },
+  { id: "recon", name: "Разведка", org: 1, soft: 1, hard: 0, break: 3, def: 4, pierce: 0, armor: 0, icon: "recon", role: "Инициатива и выбор тактики.", equipment: { support: 30 } },
+  { id: "sup_art", name: "Поддержка арт.", org: 0, soft: 12, hard: 1, break: 2, def: 4, pierce: 1, armor: 0, icon: "art", role: "Дешевый рост soft attack.", equipment: { support: 30, artillery: 24 } },
+  { id: "log", name: "Логистика", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "log", role: "Снижение расхода снабжения.", equipment: { support: 30 } },
+  { id: "signal", name: "Связь", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "signal", role: "Быстрое вступление в бой и инициатива.", equipment: { support: 30 } },
+  { id: "maintenance", name: "Ремрота", org: 0, soft: 0, hard: 0, break: 0, def: 0, pierce: 0, armor: 0, icon: "wrench", role: "Надежность и захват техники.", equipment: { support: 30 } },
+  { id: "aa", name: "Поддержка ПВО", org: 0, soft: 4, hard: 8, break: 1, def: 3, pierce: 15, armor: 0, icon: "aa", role: "ПВО в слоте поддержки.", equipment: { support: 30, artillery: 12 } }
 ];
 
 const unitTypeById = {
@@ -1454,7 +1726,11 @@ function applyResearchByType(unit, isSupport = false) {
     hp: Math.round(unit.hp * techMul),
     org: Math.round(unit.org * doctrineMul),
     soft: Math.round(unit.soft * techMul * doctrineMul),
-    hard: Math.round(unit.hard * techMul * doctrineMul)
+    hard: Math.round(unit.hard * techMul * doctrineMul),
+    break: Math.round(unit.break * techMul * doctrineMul),
+    def: Math.round(unit.def * techMul * doctrineMul),
+    pierce: Math.round(unit.pierce * techMul),
+    armor: Math.round(unit.armor * techMul)
   };
 }
 
@@ -1462,13 +1738,12 @@ function renderPalette() {
   const battalionPalette = document.getElementById("battalion-palette");
   const supportPalette = document.getElementById("support-palette");
   battalionPalette.innerHTML = lineBattalionDefs.map((unit) => `
-    <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}" title="${unit.role}">
+    <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedLine === unit.id ? "active" : ""}" data-pick-line="${unit.id}">
       ${unitIconSvg(unit.icon)} ${unit.name}
-      <small>${(() => { const scaled = applyResearchByType(unit, false); return `W:${scaled.width} ORG:${scaled.org} SA:${scaled.soft} HA:${scaled.hard}`; })()}</small>
     </button>
   `).join("");
   supportPalette.innerHTML = supportCompanyDefs.map((unit) => `
-    <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedSupport === unit.id ? "active" : ""}" data-pick-support="${unit.id}" title="${unit.role}">
+    <button draggable="true" class="palette-item unit-type-${unitTypeById[unit.id] || "support"} ${divisionState.selectedSupport === unit.id ? "active" : ""}" data-pick-support="${unit.id}">
       ${unitIconSvg(unit.icon)} ${unit.name}
     </button>
   `).join("");
@@ -1477,6 +1752,20 @@ function renderPalette() {
       divisionState.selectedLine = button.dataset.pickLine;
       renderPalette();
     });
+    button.addEventListener("mousemove", (e) => {
+      const scaled = applyResearchByType(lineBattalionDefs.find(u => u.id === button.dataset.pickLine), false);
+      tooltip.show(scaled.name, {
+        "Ширина": scaled.width,
+        "Орг": scaled.org,
+        "Soft Attack": scaled.soft,
+        "Hard Attack": scaled.hard,
+        "Прорыв": scaled.break,
+        "Защита": scaled.def,
+        "Piercing": scaled.pierce,
+        "Броня": scaled.armor
+      }, scaled.role, e.clientX, e.clientY);
+    });
+    button.addEventListener("mouseleave", () => tooltip.hide());
     button.addEventListener("mouseenter", () => {
       divisionState.previewKind = "line";
       divisionState.previewUnitId = button.dataset.pickLine;
@@ -1492,6 +1781,18 @@ function renderPalette() {
       divisionState.selectedSupport = button.dataset.pickSupport;
       renderPalette();
     });
+    button.addEventListener("mousemove", (e) => {
+      const scaled = applyResearchByType(supportCompanyDefs.find(u => u.id === button.dataset.pickSupport), true);
+      tooltip.show(scaled.name, {
+        "Орг": scaled.org,
+        "Soft Attack": scaled.soft,
+        "Hard Attack": scaled.hard,
+        "Прорыв": scaled.break,
+        "Защита": scaled.def,
+        "Piercing": scaled.pierce
+      }, scaled.role, e.clientX, e.clientY);
+    });
+    button.addEventListener("mouseleave", () => tooltip.hide());
     button.addEventListener("mouseenter", () => {
       divisionState.previewKind = "support";
       divisionState.previewUnitId = button.dataset.pickSupport;
@@ -1649,6 +1950,10 @@ function calculateDivisionStats() {
     org: Math.round(orgBase + supportUnits.reduce((sum, unit) => sum + unit.org, 0)),
     soft: Math.round(lineUnits.reduce((sum, unit) => sum + unit.soft, 0) + supportUnits.reduce((sum, unit) => sum + unit.soft, 0)),
     hard: Math.round(lineUnits.reduce((sum, unit) => sum + unit.hard, 0) + supportUnits.reduce((sum, unit) => sum + unit.hard, 0)),
+    break: Math.round(lineUnits.reduce((sum, unit) => sum + unit.break, 0) + supportUnits.reduce((sum, unit) => sum + unit.break, 0)),
+    def: Math.round(lineUnits.reduce((sum, unit) => sum + unit.def, 0) + supportUnits.reduce((sum, unit) => sum + unit.def, 0)),
+    pierce: Math.max(...lineUnits.concat(supportUnits).map(u => u.pierce || 0), 0),
+    armor: Math.max(...lineUnits.concat(supportUnits).map(u => u.armor || 0), 0),
     battalionCount: lineUnits.length,
     supportCount: supportUnits.length,
     xpCost: lineUnits.length * 5 + supportUnits.length * 10,
@@ -1818,6 +2123,10 @@ function renderDivisionStats() {
     ${statBarMarkup("Soft Attack", stats.soft, 360, "soft")}
     ${statBarMarkup("Hard Attack", stats.hard, 260, "hard")}
     ${statBarMarkup("Combat Width", stats.width, 50, "width")}
+    ${statBarMarkup("Breakthrough", stats.break, 400, "soft")}
+    ${statBarMarkup("Defense", stats.def, 600, "hp")}
+    ${statBarMarkup("Piercing", stats.pierce, 100, "hard")}
+    ${statBarMarkup("Armor", stats.armor, 100, "hard")}
     ${statBarMarkup("Army XP Cost", stats.xpCost, 200, "xp")}
     ${statBarMarkup("Industrial Cost (IC)", stats.icCost, 1800, "xp")}
     <div class="division-resource-grid">
@@ -1912,6 +2221,7 @@ async function loadTemplates() {
 async function saveDivisionTemplate() {
   if (!currentUser.authenticated) {
     setTemplateStatus("Сначала войдите в аккаунт.");
+    showToast("Для сохранения шаблона необходимо войти в систему.", "warning", "Ошибка доступа");
     return;
   }
   const payload = {
@@ -1926,14 +2236,17 @@ async function saveDivisionTemplate() {
     const isNew = !activeTemplateId;
     activeTemplateId = saved.id;
     setTemplateStatus("Шаблон сохранён.");
+    showToast(`Шаблон "${payload.name}" успешно сохранен!`, "success", "Успех");
     
     if (isNew) {
       addReward(25, "Создание шаблона дивизии");
+      showToast("+25 SC за создание нового шаблона!", "info", "Награда");
     }
     
     await loadTemplates();
   } catch {
     setTemplateStatus("Не удалось сохранить шаблон.");
+    showToast("Произошла ошибка при сохранении шаблона.", "error", "Ошибка");
   }
 }
 
@@ -2024,9 +2337,11 @@ async function loadCurrentUser() {
     if (currentUser.authenticated && currentUser.balance === undefined) {
       currentUser.balance = 100; // Стартовый баланс для демо
       currentUser.ownedItems = [];
+      currentUser.pinnedAchievements = [];
+      currentUser.friends = [];
     }
   } catch {
-    currentUser = { authenticated: false, displayName: "Гость", balance: 0, ownedItems: [] };
+    currentUser = { authenticated: false, displayName: "Гость", balance: 0, ownedItems: [], pinnedAchievements: [], friends: [] };
   }
   renderCurrentUser();
 }
@@ -2110,7 +2425,7 @@ function renderShop() {
 
 async function buyItem(item) {
   if (currentUser.balance < item.price) {
-    alert("Недостаточно Strategium Credits!");
+    showToast("Недостаточно Strategium Credits!", "error", "Ошибка покупки");
     return;
   }
 
@@ -2120,7 +2435,7 @@ async function buyItem(item) {
     currentUser.ownedItems.push(item.id);
     renderCurrentUser();
     renderShop();
-    alert(`Вы успешно приобрели "${item.title}"!`);
+    showToast(`Вы успешно приобрели "${item.title}"!`, "success", "Покупка совершена");
   }
 }
 
