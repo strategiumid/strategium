@@ -21,7 +21,8 @@ public record SupportedSteamGame(
       new SupportedSteamGame(859580, "imperator-rome", "Imperator: Rome", "Imperator", true),
       new SupportedSteamGame(255710, "cities-skylines", "Cities: Skylines", "Cities: Skylines", true),
       new SupportedSteamGame(949230, "cities-skylines-ii", "Cities: Skylines II", "Cities: Skylines", true),
-      new SupportedSteamGame(331470, "everlasting-summer", "Бесконечное лето", "Бесконечное лето", false)
+      new SupportedSteamGame(331470, "everlasting-summer", "Бесконечное лето", "Бесконечное лето", false),
+      new SupportedSteamGame(1604270, "broken-arrow", "Broken Arrow", "Broken Arrow", false)
   );
 
   public static Optional<SupportedSteamGame> findBySlug(String slug) {

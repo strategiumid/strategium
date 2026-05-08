@@ -90,7 +90,8 @@ class StrategiumApiTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].slug").value("hearts-of-iron-iv"))
         .andExpect(jsonPath("$[1].slug").value("crusader-kings-iii"))
-        .andExpect(jsonPath("$[9].slug").value("everlasting-summer"));
+        .andExpect(jsonPath("$[9].slug").value("everlasting-summer"))
+        .andExpect(jsonPath("$[10].slug").value("broken-arrow"));
   }
 
   @Test
