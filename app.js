@@ -1568,86 +1568,26 @@ function renderModdingContent() {
       <div class="mod-focus-editor">
         <div class="mod-focus-toolbar">
           <button class="sections-btn" id="mod-add-focus">Добавить фокус</button>
-          <select id="mod-focus-templates" class="division-select" style="width: auto;">
-            <option value="">Применить пресет ветки...</option>
-            ${moddingPresets.templates.map(t => `<option value="${t.id}">${t.name}</option>`).join("")}
-          </select>
           <button class="sections-btn" id="mod-gen-focus">Экспорт дерева</button>
-          <button class="sections-btn" id="mod-clear-focus">Очистить</button>
         </div>
-        <div class="mod-focus-layout">
-          <div id="mod-focus-canvas" class="mod-focus-canvas">
-            <div class="focus-grid-bg"></div>
-          </div>
-          <div id="mod-focus-inspector" class="mod-panel mod-inspector hidden">
-            <h3>Свойства фокуса</h3>
-            <div class="field-group">
-              <label>ID</label>
-              <input type="text" id="node-id">
-            </div>
-            <div class="field-group">
-              <label>Эффекты (код)</label>
-              <textarea id="node-effects" class="mod-textarea" style="height: 100px;"></textarea>
-            </div>
-            <div class="field-group">
-              <label>Быстрые пресеты эффектов</label>
-              <div class="mod-preset-grid">
-                ${moddingPresets.effects.map(e => `<button class="sections-btn" data-effect-code="${e.code}">${e.name}</button>`).join("")}
-              </div>
-            </div>
-            <button class="sections-btn primary" id="save-node">Применить</button>
-            <button class="sections-btn" id="delete-node">Удалить фокус</button>
-          </div>
+        <div id="mod-focus-canvas" class="mod-focus-canvas">
+          <div class="focus-grid-bg"></div>
         </div>
       </div>
     `;
     renderFocusTree();
     document.getElementById("mod-add-focus").addEventListener("click", addFocusNode);
     document.getElementById("mod-gen-focus").addEventListener("click", generateFocusCode);
-    document.getElementById("mod-clear-focus").addEventListener("click", () => {
-      moddingState.focusTree.nodes = [];
-      moddingState.selectedFocusIndex = null;
-      renderFocusTree();
-      document.getElementById("mod-focus-inspector").classList.add("hidden");
-    });
-    document.getElementById("mod-focus-templates").addEventListener("change", (e) => {
-      const template = moddingPresets.templates.find(t => t.id === e.target.value);
-      if (template) {
-        moddingState.focusTree.nodes.push(...JSON.parse(JSON.stringify(template.nodes)));
-        renderFocusTree();
-      }
-      e.target.value = "";
-    });
   } else if (tab === "syntax") {
     content.innerHTML = `
       <div class="mod-syntax-editor">
         <h3>Проверка синтаксиса</h3>
-        <div class="mod-syntax-toolbar">
-          <select id="mod-syntax-snippets" class="division-select" style="width: auto; margin-bottom: 10px;">
-            <option value="">Вставить сниппет...</option>
-            <option value="event">Шаблон события</option>
-            <option value="spirit">Шаблон нац. духа</option>
-            <option value="decision">Шаблон решения</option>
-          </select>
-        </div>
         <textarea id="mod-syntax-input" placeholder="Вставьте код скрипта (события, фокусы)..." class="mod-textarea"></textarea>
         <div id="mod-syntax-results" class="mod-results"></div>
         <button class="sections-btn" id="mod-check-syntax">Проверить</button>
       </div>
     `;
     document.getElementById("mod-check-syntax").addEventListener("click", checkSyntax);
-    document.getElementById("mod-syntax-snippets").addEventListener("change", (e) => {
-      const snippets = {
-        event: `country_event = {\n\tid = test.1\n\ttitle = test.1.t\n\tdesc = test.1.d\n\tpicture = GFX_report_event_generic\n\n\tis_triggered_only = yes\n\n\toption = {\n\t\tname = test.1.a\n\t\tadd_political_power = 10\n\t}\n}`,
-        spirit: `my_spirit = {\n\ticon = GFX_idea_generic_spirit\n\tmodifier = {\n\t\tstability_factor = 0.1\n\t\tindustrial_capacity_factory = 0.05\n\t}\n}`,
-        decision: `my_decision_category = {\n\tmy_decision = {\n\t\ticon = GFX_decision_generic\n\t\tcost = 50\n\t\tcomplete_effect = {\n\t\t\tadd_stability = 0.05\n\t\t}\n\t}\n}`
-      };
-      if (snippets[e.target.value]) {
-        const textarea = document.getElementById("mod-syntax-input");
-        textarea.value += (textarea.value ? "\n\n" : "") + snippets[e.target.value];
-      }
-      e.target.value = "";
-    });
   } else if (tab === "logs") {
     content.innerHTML = `
       <div class="mod-log-parser">
@@ -1781,81 +1721,27 @@ function renderFocusTree() {
   const canvas = document.getElementById("mod-focus-canvas");
   if (!canvas) return;
   
+  // Clear previous nodes (keeping grid bg)
   const existingNodes = canvas.querySelectorAll(".focus-node");
   existingNodes.forEach(n => n.remove());
 
   moddingState.focusTree.nodes.forEach((node, index) => {
     const el = document.createElement("div");
-    el.className = `focus-node ${moddingState.selectedFocusIndex === index ? "selected" : ""}`;
+    el.className = "focus-node";
     el.style.left = `${node.x}px`;
     el.style.top = `${node.y}px`;
     el.innerHTML = `
       <div class="focus-node-title">${node.id}</div>
       <div class="focus-node-coords">${node.x}, ${node.y}</div>
     `;
-    
     el.draggable = true;
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openFocusInspector(index);
-    });
-
     el.addEventListener("dragend", (e) => {
       const rect = canvas.getBoundingClientRect();
-      node.x = Math.max(0, Math.round((e.clientX - rect.left - 60) / 10) * 10);
-      node.y = Math.max(0, Math.round((e.clientY - rect.top - 40) / 10) * 10);
+      node.x = Math.round((e.clientX - rect.left) / 10) * 10;
+      node.y = Math.round((e.clientY - rect.top) / 10) * 10;
       renderFocusTree();
-      if (moddingState.selectedFocusIndex === index) {
-        openFocusInspector(index);
-      }
     });
     canvas.appendChild(el);
-  });
-}
-
-function openFocusInspector(index) {
-  moddingState.selectedFocusIndex = index;
-  const node = moddingState.focusTree.nodes[index];
-  const inspector = document.getElementById("mod-focus-inspector");
-  inspector.classList.remove("hidden");
-
-  document.getElementById("node-id").value = node.id;
-  document.getElementById("node-effects").value = node.effects;
-
-  // Render nodes with selection
-  renderFocusTree();
-
-  // Setup inspector buttons
-  const saveBtn = document.getElementById("save-node");
-  const deleteBtn = document.getElementById("delete-node");
-  
-  // Clone to remove old listeners
-  const newSaveBtn = saveBtn.cloneNode(true);
-  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-  const newDeleteBtn = deleteBtn.cloneNode(true);
-  deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
-
-  newSaveBtn.addEventListener("click", () => {
-    node.id = document.getElementById("node-id").value;
-    node.effects = document.getElementById("node-effects").value;
-    renderFocusTree();
-    showToast("Свойства фокуса сохранены", "success");
-  });
-
-  newDeleteBtn.addEventListener("click", () => {
-    moddingState.focusTree.nodes.splice(index, 1);
-    moddingState.selectedFocusIndex = null;
-    inspector.classList.add("hidden");
-    renderFocusTree();
-  });
-
-  // Setup preset buttons
-  document.querySelectorAll("[data-effect-code]").forEach(btn => {
-    btn.onclick = () => {
-      const textarea = document.getElementById("node-effects");
-      const current = textarea.value.trim();
-      textarea.value = current ? `${current}\n${btn.dataset.effectCode}` : btn.dataset.effectCode;
-    };
   });
 }
 
@@ -1997,6 +1883,8 @@ function setupModdingModal() {
   });
 }
 
+function setupConstructorsModal() {
+
 const lineBattalionDefs = [
   { id: "infantry", name: "Пехота", width: 2, hp: 25, org: 60, soft: 12, hard: 1, break: 4, def: 20, pierce: 1, armor: 0, icon: "inf", role: "Линейная пехота: держит фронт и организацию.", equipment: { infantry: 900 }, resources: { steel: 2 }, year: 1936 },
   { id: "artillery", name: "Артиллерия", width: 3, hp: 12, org: 20, soft: 36, hard: 2, break: 6, def: 10, pierce: 2, armor: 0, icon: "art", role: "Удар по пехоте, но снижает общую организацию.", equipment: { artillery: 36, infantry: 500 }, resources: { steel: 2, tungsten: 1 }, year: 1936 },
@@ -2061,7 +1949,6 @@ const divisionState = {
 
 const moddingState = {
   activeTab: "country",
-  selectedFocusIndex: null,
   country: {
     tag: "NEW",
     name: "New Country",
@@ -2073,29 +1960,6 @@ const moddingState = {
   focusTree: {
     nodes: []
   }
-};
-
-const moddingPresets = {
-  effects: [
-    { id: "pp_50", name: "Политволя +50", code: "add_political_power = 50" },
-    { id: "civ_factory", name: "Гражд. завод", code: "add_offsite_civilian_factories = 1" },
-    { id: "mil_factory", name: "Военный завод", code: "add_offsite_ic = 1" },
-    { id: "stability_5", name: "Стабильность +5%", code: "add_stability = 0.05" },
-    { id: "war_support_5", name: "Поддержка войны +5%", code: "add_war_support = 0.05" },
-    { id: "research_slot", name: "Слот исследования", code: "add_research_slot = 1" },
-    { id: "annex_country", name: "Аннексия (TAG)", code: "annex_country = { target = TAG transfer_troops = yes }" },
-    { id: "add_ideas", name: "Нац. дух", code: "add_ideas = my_national_spirit" }
-  ],
-  templates: [
-    { id: "industry_path", name: "Ветка индустрии", nodes: [
-      { id: "ind_1", x: 100, y: 50, effects: "add_political_power = 25" },
-      { id: "ind_2", x: 100, y: 150, effects: "add_offsite_civilian_factories = 2" }
-    ]},
-    { id: "army_path", name: "Ветка армии", nodes: [
-      { id: "mil_1", x: 300, y: 50, effects: "add_stability = 0.05" },
-      { id: "mil_2", x: 300, y: 150, effects: "army_experience = 20" }
-    ]}
-  ]
 };
 
 const optimalWidths = new Set([20, 21, 27, 42, 45]);
@@ -2161,7 +2025,6 @@ function applyResearchByType(unit, isSupport = false) {
 function renderPalette() {
   const battalionPalette = document.getElementById("battalion-palette");
   const supportPalette = document.getElementById("support-palette");
-  if (!battalionPalette || !supportPalette) return;
   
   const filteredLine = lineBattalionDefs.filter(u => !u.year || u.year <= divisionState.currentYear);
   const filteredSupport = supportCompanyDefs.filter(u => !u.year || u.year <= divisionState.currentYear);
@@ -2278,7 +2141,6 @@ function unitIconSvg(icon) {
 function renderDivisionGrid() {
   const grid = document.getElementById("division-grid");
   const supportGrid = document.getElementById("support-grid");
-  if (!grid || !supportGrid) return;
   grid.innerHTML = divisionState.lineSlots.map((unitId, index) => {
     const unit = unitId ? lineBattalionDefs.find((def) => def.id === unitId) : null;
     const unitType = unit ? unitTypeById[unit.id] || "support" : "";
@@ -2485,7 +2347,6 @@ function getPreviewDelta() {
 
 function renderAiComparison(stats) {
   const container = document.getElementById("division-ai-compare");
-  if (!container) return;
   if (!container.dataset.ready) {
     container.innerHTML = `
       <h3>Сравнение с AI</h3>
@@ -2540,8 +2401,6 @@ function calculateStatsForTemplate(line, support) {
 }
 
 function renderDivisionStats() {
-  const statsContainer = document.getElementById("division-stats");
-  if (!statsContainer) return;
   const stats = calculateDivisionStats();
   const validation = evaluateTemplate(stats);
   const warningLines = validation.warnings.map((item) => `<li>${item}</li>`).join("");
@@ -2551,7 +2410,7 @@ function renderDivisionStats() {
     : "";
   const whatIfOrg = Math.max(0, stats.org - 4);
   const whatIfSoft = stats.soft + 24;
-  statsContainer.innerHTML = `
+  document.getElementById("division-stats").innerHTML = `
     <div class="division-verdict verdict-${validation.verdictClass}">${validation.verdict}</div>
     <div class="division-fill-grid">
       <div>
@@ -3064,6 +2923,9 @@ setupModdingModal();
 setupShopModal();
 setupWikiModal();
 setupNewsFilters();
+renderPalette();
+renderDivisionGrid();
+renderDivisionStats();
 setupToolsModal();
 loadCurrentUser();
 loadNews();

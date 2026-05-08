@@ -1166,40 +1166,6 @@ body::before {
   margin: 10px 0;
 }
 
-.mod-focus-layout {
-  display: flex;
-  gap: 15px;
-  flex: 1;
-  min-height: 0;
-}
-
-.mod-inspector {
-  width: 300px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.mod-preset-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 5px;
-  margin-top: 5px;
-}
-
-.mod-preset-grid .sections-btn {
-  font-size: 0.65rem;
-  padding: 4px;
-  text-align: center;
-}
-
-.focus-node.selected {
-  border-width: 2px;
-  box-shadow: 0 0 15px var(--gold);
-}
-
 .top-avatar {
   width: 32px;
   height: 32px;
