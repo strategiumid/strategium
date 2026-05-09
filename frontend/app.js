@@ -1572,18 +1572,46 @@ function renderModdingContent() {
             <option value="">Применить пресет ветки...</option>
             ${moddingPresets.templates.map(t => `<option value="${t.id}">${t.name}</option>`).join("")}
           </select>
+          <button class="sections-btn" id="mod-link-mode">Связывание: ВЫКЛ</button>
+          <button class="sections-btn" id="mod-auto-layout">Расставить дерево</button>
+          <button class="sections-btn" id="mod-simulation-mode">Симуляция: ВЫКЛ</button>
+          <button class="sections-btn" id="mod-undo">Undo</button>
+          <button class="sections-btn" id="mod-redo">Redo</button>
+          <input type="file" id="mod-import-focus" class="hidden" accept=".txt">
+          <label for="mod-import-focus" class="sections-btn">Импорт .txt</label>
           <button class="sections-btn" id="mod-gen-focus">Экспорт дерева</button>
+          <button class="sections-btn primary" id="mod-gen-advanced">Расширенный экспорт (ZIP)</button>
           <button class="sections-btn" id="mod-clear-focus">Очистить</button>
         </div>
         <div class="mod-focus-layout">
           <div id="mod-focus-canvas" class="mod-focus-canvas">
             <div class="focus-grid-bg"></div>
+            <svg id="mod-focus-connections" class="focus-connections-svg">
+              <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orientation="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="var(--gold)" />
+                </marker>
+              </defs>
+            </svg>
           </div>
           <div id="mod-focus-inspector" class="mod-panel mod-inspector hidden">
             <h3>Свойства фокуса</h3>
             <div class="field-group">
               <label>ID</label>
               <input type="text" id="node-id">
+            </div>
+            <div class="field-group">
+              <label>Иконка (GFX)</label>
+              <div style="display: flex; gap: 5px;">
+                <input type="text" id="node-icon" style="flex: 1;">
+                <button class="sections-btn" id="open-icon-browser">📁</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Тип фокуса</label>
+              <select id="node-type" class="division-select">
+                ${moddingPresets.focusTypes.map(t => `<option value="${t.id}">${t.name}</option>`).join("")}
+              </select>
             </div>
             <div class="field-group">
               <label>Эффекты (код)</label>
@@ -1599,21 +1627,34 @@ function renderModdingContent() {
             <button class="sections-btn" id="delete-node">Удалить фокус</button>
           </div>
         </div>
+        <div id="mod-focus-errors" class="mod-panel mod-errors-panel hidden">
+          <h3>Валидатор дерева</h3>
+          <div id="mod-focus-errors-list"></div>
+        </div>
       </div>
     `;
     renderFocusTree();
     document.getElementById("mod-add-focus").addEventListener("click", addFocusNode);
     document.getElementById("mod-gen-focus").addEventListener("click", generateFocusCode);
+    document.getElementById("mod-gen-advanced").addEventListener("click", generateAdvancedExport);
     document.getElementById("mod-clear-focus").addEventListener("click", () => {
       moddingState.focusTree.nodes = [];
       moddingState.selectedFocusIndex = null;
       renderFocusTree();
       document.getElementById("mod-focus-inspector").classList.add("hidden");
     });
+    document.getElementById("mod-auto-layout").addEventListener("click", autoLayoutTree);
+    document.getElementById("mod-simulation-mode").addEventListener("click", toggleSimulationMode);
+    document.getElementById("mod-undo").addEventListener("click", undoAction);
+    document.getElementById("mod-redo").addEventListener("click", redoAction);
+    document.getElementById("open-icon-browser").addEventListener("click", openIconBrowser);
+    document.getElementById("mod-link-mode").addEventListener("click", toggleLinkMode);
+    document.getElementById("mod-import-focus").addEventListener("change", importFocusTree);
     document.getElementById("mod-focus-templates").addEventListener("change", (e) => {
       const template = moddingPresets.templates.find(t => t.id === e.target.value);
       if (template) {
         moddingState.focusTree.nodes.push(...JSON.parse(JSON.stringify(template.nodes)));
+        pushHistory();
         renderFocusTree();
       }
       e.target.value = "";
@@ -1777,16 +1818,101 @@ set_capital = ${capital}
   document.getElementById("mod-output").textContent = code;
 }
 
+function pushHistory() {
+  const state = JSON.stringify(moddingState.focusTree.nodes);
+  if (moddingState.historyIndex < moddingState.history.length - 1) {
+    moddingState.history = moddingState.history.slice(0, moddingState.historyIndex + 1);
+  }
+  moddingState.history.push(state);
+  moddingState.historyIndex++;
+  if (moddingState.history.length > 50) {
+    moddingState.history.shift();
+    moddingState.historyIndex--;
+  }
+}
+
+function undoAction() {
+  if (moddingState.historyIndex > 0) {
+    moddingState.historyIndex--;
+    moddingState.focusTree.nodes = JSON.parse(moddingState.history[moddingState.historyIndex]);
+    renderFocusTree();
+    showToast("Undo выполнено", "info");
+  }
+}
+
+function redoAction() {
+  if (moddingState.historyIndex < moddingState.history.length - 1) {
+    moddingState.historyIndex++;
+    moddingState.focusTree.nodes = JSON.parse(moddingState.history[moddingState.historyIndex]);
+    renderFocusTree();
+    showToast("Redo выполнено", "info");
+  }
+}
+
+function toggleSimulationMode() {
+  moddingState.simulation.active = !moddingState.simulation.active;
+  moddingState.simulation.completedNodes.clear();
+  const btn = document.getElementById("mod-simulation-mode");
+  btn.textContent = `Симуляция: ${moddingState.simulation.active ? "ВКЛ" : "ВЫКЛ"}`;
+  btn.classList.toggle("primary", moddingState.simulation.active);
+  renderFocusTree();
+  
+  if (moddingState.simulation.active) {
+    showToast("Кликайте по доступным фокусам для 'прохождения'", "info", "Режим симуляции");
+  }
+}
+
+function handleSimulationClick(index) {
+  const node = moddingState.focusTree.nodes[index];
+  
+  // Check prerequisites
+  const canComplete = (node.prerequisites || []).every(preId => {
+    const preNode = moddingState.focusTree.nodes.find(n => n.id === preId);
+    return preNode && moddingState.simulation.completedNodes.has(preNode.id);
+  });
+
+  if (!canComplete) {
+    showToast(`Фокус "${node.id}" заблокирован зависимостями`, "warning");
+    return;
+  }
+
+  if (moddingState.simulation.completedNodes.has(node.id)) {
+    moddingState.simulation.completedNodes.delete(node.id);
+  } else {
+    moddingState.simulation.completedNodes.add(node.id);
+    showToast(`Фокус "${node.id}" завершен (70 дней)`, "success");
+  }
+  renderFocusTree();
+}
+
 function renderFocusTree() {
   const canvas = document.getElementById("mod-focus-canvas");
-  if (!canvas) return;
+  const svg = document.getElementById("mod-focus-connections");
+  if (!canvas || !svg) return;
   
   const existingNodes = canvas.querySelectorAll(".focus-node");
   existingNodes.forEach(n => n.remove());
 
+  // Clear previous lines (keep defs)
+  const lines = svg.querySelectorAll(".focus-connection-line");
+  lines.forEach(l => l.remove());
+
+  // Update SVG size
+  const rect = canvas.getBoundingClientRect();
+  svg.setAttribute("width", rect.width);
+  svg.setAttribute("height", rect.height);
+
   moddingState.focusTree.nodes.forEach((node, index) => {
     const el = document.createElement("div");
-    el.className = `focus-node ${moddingState.selectedFocusIndex === index ? "selected" : ""}`;
+    const isSelected = moddingState.selectedFocusIndex === index;
+    const isLinking = moddingState.linkMode.active && moddingState.linkMode.fromIndex === index;
+    
+    el.className = `focus-node ${isSelected ? "selected" : ""} ${isLinking ? "linking-source" : ""} ${moddingState.simulation.active && moddingState.simulation.completedNodes.has(node.id) ? "completed" : ""}`;
+    
+    // Set color based on type
+    const typeDef = moddingPresets.focusTypes.find(t => t.id === (node.type || "standard"));
+    if (typeDef) el.style.borderColor = typeDef.color;
+
     el.style.left = `${node.x}px`;
     el.style.top = `${node.y}px`;
     el.innerHTML = `
@@ -1794,22 +1920,238 @@ function renderFocusTree() {
       <div class="focus-node-coords">${node.x}, ${node.y}</div>
     `;
     
-    el.draggable = true;
+    el.draggable = !moddingState.linkMode.active && !moddingState.simulation.active;
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      openFocusInspector(index);
+      if (moddingState.linkMode.active) {
+        handleLinkClick(index);
+      } else if (moddingState.simulation.active) {
+        handleSimulationClick(index);
+      } else {
+        openFocusInspector(index);
+      }
     });
 
     el.addEventListener("dragend", (e) => {
-      const rect = canvas.getBoundingClientRect();
-      node.x = Math.max(0, Math.round((e.clientX - rect.left - 60) / 10) * 10);
-      node.y = Math.max(0, Math.round((e.clientY - rect.top - 40) / 10) * 10);
+      const canvasRect = canvas.getBoundingClientRect();
+      node.x = Math.max(0, Math.round((e.clientX - canvasRect.left - 60) / 10) * 10);
+      node.y = Math.max(0, Math.round((e.clientY - canvasRect.top - 40) / 10) * 10);
+      pushHistory();
       renderFocusTree();
       if (moddingState.selectedFocusIndex === index) {
         openFocusInspector(index);
       }
     });
     canvas.appendChild(el);
+
+    // Draw prerequisites
+    (node.prerequisites || []).forEach(parentID => {
+      const parentNode = moddingState.focusTree.nodes.find(n => n.id === parentID);
+      if (parentNode) {
+        drawConnection(parentNode, node, "prerequisite", svg);
+      }
+    });
+
+    // Draw mutual exclusions
+    (node.mutually_exclusive || []).forEach(otherID => {
+      const otherNode = moddingState.focusTree.nodes.find(n => n.id === otherID);
+      if (otherNode) {
+        // Draw only once (if current index < other index) to avoid double lines
+        const otherIndex = moddingState.focusTree.nodes.indexOf(otherNode);
+        if (index < otherIndex) {
+          drawConnection(node, otherNode, "exclusive", svg);
+        }
+      }
+    });
+  });
+
+  validateTree();
+}
+
+function drawConnection(fromNode, toNode, type, svg) {
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  line.setAttribute("class", `focus-connection-line ${type === "exclusive" ? "exclusive" : ""}`);
+  
+  const x1 = fromNode.x + 60;
+  const y1 = fromNode.y + 80;
+  const x2 = toNode.x + 60;
+  const y2 = toNode.y;
+
+  if (type === "prerequisite") {
+    // Bezier curve for prerequisites
+    const midY = (y1 + y2) / 2;
+    line.setAttribute("d", `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
+  } else {
+    // Straight dashed line for mutual exclusions
+    line.setAttribute("d", `M ${fromNode.x + 60} ${fromNode.y + 40} L ${toNode.x + 60} ${toNode.y + 40}`);
+  }
+  
+  svg.appendChild(line);
+}
+
+function toggleLinkMode() {
+  moddingState.linkMode.active = !moddingState.linkMode.active;
+  moddingState.linkMode.fromIndex = null;
+  const btn = document.getElementById("mod-link-mode");
+  btn.textContent = `Связывание: ${moddingState.linkMode.active ? "ВКЛ" : "ВЫКЛ"}`;
+  btn.classList.toggle("primary", moddingState.linkMode.active);
+  renderFocusTree();
+  
+  if (moddingState.linkMode.active) {
+    showToast("Выберите родительский узел, затем дочерний", "info", "Режим связывания");
+  }
+}
+
+function handleLinkClick(index) {
+  if (moddingState.linkMode.fromIndex === null) {
+    moddingState.linkMode.fromIndex = index;
+    renderFocusTree();
+  } else {
+    const fromIndex = moddingState.linkMode.fromIndex;
+    if (fromIndex === index) {
+      moddingState.linkMode.fromIndex = null;
+    } else {
+      const fromNode = moddingState.focusTree.nodes[fromIndex];
+      const toNode = moddingState.focusTree.nodes[index];
+      
+      if (!toNode.prerequisites) toNode.prerequisites = [];
+      if (!toNode.prerequisites.includes(fromNode.id)) {
+        toNode.prerequisites.push(fromNode.id);
+        pushHistory();
+        showToast(`Связь создана: ${fromNode.id} -> ${toNode.id}`, "success");
+      } else {
+        toNode.prerequisites = toNode.prerequisites.filter(id => id !== fromNode.id);
+        pushHistory();
+        showToast(`Связь удалена`, "info");
+      }
+      
+      moddingState.linkMode.fromIndex = null;
+    }
+    renderFocusTree();
+  }
+}
+
+function validateTree() {
+  const nodes = moddingState.focusTree.nodes;
+  const errors = [];
+  const errorPanel = document.getElementById("mod-focus-errors");
+  const errorList = document.getElementById("mod-focus-errors-list");
+  
+  if (!errorPanel || !errorList) return;
+
+  // 1. Duplicate IDs
+  const ids = nodes.map(n => n.id);
+  const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+  duplicates.forEach(id => errors.push({ type: "error", msg: `Дублирующийся ID: ${id}` }));
+
+  // 2. Cycles (DFS)
+  const visited = new Set();
+  const recStack = new Set();
+  let hasCycle = false;
+
+  function checkCycle(nodeId) {
+    visited.add(nodeId);
+    recStack.add(nodeId);
+    
+    const node = nodes.find(n => n.id === nodeId);
+    if (node && node.prerequisites) {
+      for (const preId of node.prerequisites) {
+        if (!visited.has(preId)) {
+          if (checkCycle(preId)) return true;
+        } else if (recStack.has(preId)) {
+          hasCycle = true;
+          return true;
+        }
+      }
+    }
+    
+    recStack.delete(nodeId);
+    return false;
+  }
+
+  nodes.forEach(node => {
+    if (!visited.has(node.id)) {
+      if (checkCycle(node.id)) {
+        errors.push({ type: "error", msg: `Обнаружен цикл в зависимостях!` });
+      }
+    }
+  });
+
+  // 3. Hanging nodes (no prerequisites and not a starting node - simple check)
+  // In HOI4, starting nodes have no prerequisites. But we can check if they are too far from Y=0.
+  nodes.forEach(node => {
+    if ((!node.prerequisites || node.prerequisites.length === 0) && node.y > 200) {
+      errors.push({ type: "warning", msg: `Фокус "${node.id}" не имеет путей от начала дерева.` });
+    }
+  });
+
+  if (errors.length > 0) {
+    errorPanel.classList.remove("hidden");
+    errorList.innerHTML = errors.map(e => `
+      <div class="mod-log-line ${e.type}">
+        <span class="log-text">${e.msg}</span>
+      </div>
+    `).join("");
+  } else {
+    errorPanel.classList.add("hidden");
+  }
+}
+
+function openIconBrowser() {
+  const existingModal = document.getElementById("icon-browser-modal");
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "icon-browser-modal";
+  modal.className = "modal";
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <section class="modal-content" style="width: 500px;">
+      <header class="modal-header">
+        <h2>Библиотека GFX</h2>
+        <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+      </header>
+      <div class="modal-subtitle">Выберите стандартную иконку HOI4</div>
+      <div class="icon-browser-grid">
+        ${moddingPresets.icons.map(icon => `
+          <div class="icon-item" data-icon-id="${icon.id}" title="${icon.category}">
+            <div class="icon-preview-box">GFX</div>
+            <span>${icon.id.replace("GFX_focus_", "")}</span>
+          </div>
+        `).join("")}
+      </div>
+      <div style="margin-top: 15px; border-top: 1px solid var(--line); padding-top: 10px;">
+        <label class="sections-btn" for="custom-icon-upload">Загрузить свой .dds/.png</label>
+        <input type="file" id="custom-icon-upload" class="hidden" accept=".png,.dds">
+      </div>
+    </section>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll(".icon-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const iconId = item.dataset.iconId;
+      document.getElementById("node-icon").value = iconId;
+      if (moddingState.selectedFocusIndex !== null) {
+        moddingState.focusTree.nodes[moddingState.selectedFocusIndex].icon = iconId;
+      }
+      modal.remove();
+      showToast(`Выбрана иконка: ${iconId}`, "info");
+    });
+  });
+
+  document.getElementById("custom-icon-upload").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const fileName = file.name.split(".")[0];
+      const iconId = `GFX_custom_${fileName}`;
+      document.getElementById("node-icon").value = iconId;
+      if (moddingState.selectedFocusIndex !== null) {
+        moddingState.focusTree.nodes[moddingState.selectedFocusIndex].icon = iconId;
+      }
+      modal.remove();
+      showToast(`Файл загружен. Используйте ID: ${iconId}`, "success");
+    }
   });
 }
 
@@ -1820,6 +2162,8 @@ function openFocusInspector(index) {
   inspector.classList.remove("hidden");
 
   document.getElementById("node-id").value = node.id;
+    document.getElementById("node-icon").value = node.icon || "GFX_focus_generic_socialist_bulwark";
+    document.getElementById("node-type").value = node.type || "standard";
   document.getElementById("node-effects").value = node.effects;
 
   // Render nodes with selection
@@ -1837,7 +2181,10 @@ function openFocusInspector(index) {
 
   newSaveBtn.addEventListener("click", () => {
     node.id = document.getElementById("node-id").value;
+    node.icon = document.getElementById("node-icon").value;
+    node.type = document.getElementById("node-type").value;
     node.effects = document.getElementById("node-effects").value;
+    pushHistory();
     renderFocusTree();
     showToast("Свойства фокуса сохранены", "success");
   });
@@ -1845,6 +2192,7 @@ function openFocusInspector(index) {
   newDeleteBtn.addEventListener("click", () => {
     moddingState.focusTree.nodes.splice(index, 1);
     moddingState.selectedFocusIndex = null;
+    pushHistory();
     inspector.classList.add("hidden");
     renderFocusTree();
   });
@@ -1866,15 +2214,203 @@ function addFocusNode() {
     id,
     x: 50,
     y: 50,
+    icon: "GFX_focus_generic_socialist_bulwark",
+    type: "standard",
+    prerequisites: [],
     effects: "add_political_power = 50"
   });
+  pushHistory();
   renderFocusTree();
+  if (moddingState.historyIndex === -1) pushHistory(); // Initial state
+}
+
+function autoLayoutTree() {
+  const nodes = moddingState.focusTree.nodes;
+  if (nodes.length === 0) return;
+
+  // Simple layered layout (Sugiyama-lite)
+  const layers = [];
+  const visited = new Set();
+  
+  function getLayer(nodeId) {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node || !node.prerequisites || node.prerequisites.length === 0) return 0;
+    
+    let maxParentLayer = -1;
+    node.prerequisites.forEach(preId => {
+      maxParentLayer = Math.max(maxParentLayer, getLayer(preId));
+    });
+    return maxParentLayer + 1;
+  }
+
+  nodes.forEach(node => {
+    const layerIdx = getLayer(node.id);
+    if (!layers[layerIdx]) layers[layerIdx] = [];
+    layers[layerIdx].push(node);
+  });
+
+  const X_SPACING = 150;
+  const Y_SPACING = 120;
+
+  layers.forEach((layerNodes, yIdx) => {
+    layerNodes.forEach((node, xIdx) => {
+      // Center the layer
+      const layerWidth = layerNodes.length * X_SPACING;
+      node.x = 400 - (layerWidth / 2) + (xIdx * X_SPACING);
+      node.y = 50 + (yIdx * Y_SPACING);
+    });
+  });
+
+  renderFocusTree();
+  pushHistory();
+  showToast("Дерево автоматически расставлено", "success");
+}
+
+function importFocusTree(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    const nodes = parseHoi4FocusTree(content);
+    if (nodes.length > 0) {
+      moddingState.focusTree.nodes = nodes;
+      pushHistory();
+      renderFocusTree();
+      showToast(`Импортировано фокусов: ${nodes.length}`, "success");
+    } else {
+      showToast("Не удалось найти фокусы в файле", "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseHoi4FocusTree(text) {
+  const nodes = [];
+  // Basic regex-based parser for HOI4 focus structure
+  const focusRegex = /focus\s*=\s*\{([\s\S]*?)\n\t\}/g;
+  let match;
+
+  while ((match = focusRegex.exec(text)) !== null) {
+    const body = match[1];
+    const idMatch = /id\s*=\s*(\S+)/.exec(body);
+    const xMatch = /x\s*=\s*(\d+)/.exec(body);
+    const yMatch = /y\s*=\s*(\d+)/.exec(body);
+    
+    if (idMatch) {
+      const node = {
+        id: idMatch[1].replace(/["']/g, ""),
+        x: xMatch ? parseInt(xMatch[1]) * 50 : 50,
+        y: yMatch ? parseInt(yMatch[1]) * 50 : 50,
+        type: body.includes("continuous = yes") ? "continuous" : "standard",
+        prerequisites: [],
+        mutually_exclusive: [],
+        effects: ""
+      };
+
+      // Prerequisites
+      const preRegex = /prerequisite\s*=\s*\{\s*focus\s*=\s*(\S+)\s*\}/g;
+      let preMatch;
+      while ((preMatch = preRegex.exec(body)) !== null) {
+        node.prerequisites.push(preMatch[1].replace(/["']/g, ""));
+      }
+
+      // Mutual exclusive
+      const exclRegex = /mutually_exclusive\s*=\s*\{\s*focus\s*=\s*(\S+)\s*\}/g;
+      let exclMatch;
+      while ((exclMatch = exclRegex.exec(body)) !== null) {
+        node.mutually_exclusive.push(exclMatch[1].replace(/["']/g, ""));
+      }
+
+      // Effects (simple extraction)
+      const rewardMatch = /completion_reward\s*=\s*\{([\s\S]*?)\}/.exec(body);
+      if (rewardMatch) {
+        node.effects = rewardMatch[1].trim();
+      }
+
+      nodes.push(node);
+    }
+  }
+
+  return nodes;
+}
+
+async function generateAdvancedExport() {
+  if (typeof JSZip === "undefined") {
+    showToast("Библиотека JSZip не загружена", "error");
+    return;
+  }
+
+  const zip = new JSZip();
+  const tag = moddingState.country.tag || "NEW";
+  
+  // 1. Focus Tree
+  let focusCode = "focus_tree = {\n\tid = " + tag + "_focus_tree\n\t\n";
+  moddingState.focusTree.nodes.forEach(node => {
+    focusCode += `\tfocus = {\n\t\tid = ${node.id}\n\t\tx = ${Math.floor(node.x / 50)}\n\t\ty = ${Math.floor(node.y / 50)}\n`;
+    if (node.prerequisites?.length) node.prerequisites.forEach(pre => focusCode += `\t\tprerequisite = { focus = ${pre} }\n`);
+    focusCode += `\t\tcompletion_reward = {\n\t\t\t${node.effects}\n\t\t}\n\t}\n\n`;
+  });
+  focusCode += "}";
+  zip.file(`common/national_focus/${tag.toLowerCase()}.txt`, focusCode);
+
+  // 2. Localization
+  let locCode = "l_english:\n";
+  moddingState.focusTree.nodes.forEach(node => {
+    locCode += ` ${node.id}:0 "${node.id}"\n`;
+    locCode += ` ${node.id}_desc:0 "Description for ${node.id}"\n`;
+  });
+  zip.file(`localisation/english/focus_l_english.yml`, "\ufeff" + locCode); // Add BOM for HOI4
+
+  // 3. Country file snippet
+  let countryCode = `set_focus_tree = ${tag}_focus_tree\n`;
+  zip.file(`history/countries/${tag}.txt`, countryCode);
+
+  // 4. Ideas (if any in effects)
+  const ideas = [];
+  moddingState.focusTree.nodes.forEach(node => {
+    const match = /add_ideas\s*=\s*(\S+)/.exec(node.effects);
+    if (match) ideas.push(match[1]);
+  });
+  
+  if (ideas.length > 0) {
+    let ideasCode = "ideas = {\n\tcountry = {\n";
+    ideas.forEach(id => {
+      ideasCode += `\t\t${id} = {\n\t\t\tpicture = GFX_idea_generic\n\t\t\tmodifier = {\n\t\t\t\tstability_factor = 0.05\n\t\t\t}\n\t\t}\n`;
+    });
+    ideasCode += "\t}\n}";
+    zip.file(`common/ideas/${tag.toLowerCase()}_ideas.txt`, ideasCode);
+  }
+
+  const content = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(content);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${tag}_mod_structure.zip`;
+  a.click();
+  
+  showToast("Архив мода успешно сгенерирован", "success");
 }
 
 function generateFocusCode() {
   let code = "focus_tree = {\n\tid = new_tree\n\t\n";
   moddingState.focusTree.nodes.forEach(node => {
-    code += `\tfocus = {\n\t\tid = ${node.id}\n\t\tx = ${Math.floor(node.x / 50)}\n\t\ty = ${Math.floor(node.y / 50)}\n\t\tcompletion_reward = {\n\t\t\t${node.effects}\n\t\t}\n\t}\n\n`;
+    code += `\tfocus = {\n\t\tid = ${node.id}\n\t\tx = ${Math.floor(node.x / 50)}\n\t\ty = ${Math.floor(node.y / 50)}\n`;
+    
+    if (node.prerequisites && node.prerequisites.length > 0) {
+      node.prerequisites.forEach(pre => {
+        code += `\t\tprerequisite = { focus = ${pre} }\n`;
+      });
+    }
+    
+    if (node.mutually_exclusive && node.mutually_exclusive.length > 0) {
+      node.mutually_exclusive.forEach(excl => {
+        code += `\t\tmutually_exclusive = { focus = ${excl} }\n`;
+      });
+    }
+
+    code += `\t\tcompletion_reward = {\n\t\t\t${node.effects}\n\t\t}\n\t}\n\n`;
   });
   code += "}";
   
@@ -2062,6 +2598,11 @@ const divisionState = {
 const moddingState = {
   activeTab: "country",
   selectedFocusIndex: null,
+  linkMode: {
+    active: false,
+    type: "prerequisite", // or "exclusive"
+    fromIndex: null
+  },
   country: {
     tag: "NEW",
     name: "New Country",
@@ -2072,10 +2613,28 @@ const moddingState = {
   },
   focusTree: {
     nodes: []
+  },
+  history: [],
+  historyIndex: -1,
+  simulation: {
+    active: false,
+    completedNodes: new Set()
   }
 };
 
 const moddingPresets = {
+  icons: [
+    { id: "GFX_focus_generic_socialist_bulwark", category: "Политика" },
+    { id: "GFX_focus_generic_industry", category: "Индустрия" },
+    { id: "GFX_focus_generic_military_sphere", category: "Армия" },
+    { id: "GFX_focus_generic_diplomatic_treaty", category: "Дипломатия" },
+    { id: "GFX_focus_generic_manpower", category: "Армия" },
+    { id: "GFX_focus_generic_scientific_exchange", category: "Исследования" },
+    { id: "GFX_focus_generic_secret_weapon", category: "Исследования" },
+    { id: "GFX_focus_generic_tank_production", category: "Армия" },
+    { id: "GFX_focus_generic_naval_production", category: "Флот" },
+    { id: "GFX_focus_generic_air_production", category: "Авиация" }
+  ],
   effects: [
     { id: "pp_50", name: "Политволя +50", code: "add_political_power = 50" },
     { id: "civ_factory", name: "Гражд. завод", code: "add_offsite_civilian_factories = 1" },
@@ -2088,13 +2647,19 @@ const moddingPresets = {
   ],
   templates: [
     { id: "industry_path", name: "Ветка индустрии", nodes: [
-      { id: "ind_1", x: 100, y: 50, effects: "add_political_power = 25" },
-      { id: "ind_2", x: 100, y: 150, effects: "add_offsite_civilian_factories = 2" }
+      { id: "ind_1", x: 100, y: 50, effects: "add_political_power = 25", prerequisites: [] },
+      { id: "ind_2", x: 100, y: 150, effects: "add_offsite_civilian_factories = 2", prerequisites: ["ind_1"] }
     ]},
     { id: "army_path", name: "Ветка армии", nodes: [
-      { id: "mil_1", x: 300, y: 50, effects: "add_stability = 0.05" },
-      { id: "mil_2", x: 300, y: 150, effects: "army_experience = 20" }
+      { id: "mil_1", x: 300, y: 50, effects: "add_stability = 0.05", prerequisites: [] },
+      { id: "mil_2", x: 300, y: 150, effects: "army_experience = 20", prerequisites: ["mil_1"] }
     ]}
+  ],
+  focusTypes: [
+    { id: "standard", name: "Обычный", color: "var(--gold)", icon: "GFX_focus_generic_socialist_bulwark" },
+    { id: "continuous", name: "Длительный", color: "#6bbd7e", icon: "GFX_focus_generic_industry" },
+    { id: "auto", name: "Автофокус", color: "#9fb7ff", icon: "GFX_focus_generic_military_sphere" },
+    { id: "shared", name: "Общий", color: "#c25a5a", icon: "GFX_focus_generic_diplomatic_treaty" }
   ]
 };
 

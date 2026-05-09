@@ -1063,6 +1063,28 @@ body::before {
   pointer-events: none;
 }
 
+.focus-connections-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.focus-connection-line {
+  stroke: var(--gold);
+  stroke-width: 2;
+  fill: none;
+  marker-end: url(#arrowhead);
+}
+
+.focus-connection-line.exclusive {
+  stroke: var(--red-alert);
+  stroke-dasharray: 5,5;
+  marker-end: none;
+}
+
 .focus-node {
   position: absolute;
   width: 120px;
@@ -1195,9 +1217,69 @@ body::before {
   text-align: center;
 }
 
+.icon-browser-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 15px;
+}
+
+.icon-item {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--line);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-item:hover {
+  border-color: var(--gold);
+  background: rgba(194, 162, 98, 0.05);
+}
+
+.icon-preview-box {
+  width: 48px;
+  height: 48px;
+  background: #111a28;
+  border: 1px solid var(--line-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.icon-item span {
+  font-size: 0.6rem;
+  color: #a0aec0;
+  text-align: center;
+  word-break: break-all;
+}
+
 .focus-node.selected {
   border-width: 2px;
   box-shadow: 0 0 15px var(--gold);
+}
+
+.focus-node.completed {
+  background: linear-gradient(180deg, #2d4a35, #14261a);
+  border-color: var(--green-achieved);
+  box-shadow: 0 0 10px var(--green-achieved);
+}
+
+.focus-node.completed::after {
+  content: "✓";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: var(--green-achieved);
+  font-weight: bold;
 }
 
 .top-avatar {
